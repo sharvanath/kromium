@@ -2,8 +2,7 @@
 
 ## What is Kromium?
 
-Kromium is a low-code data transformation pipeline. The pipeline is represented as a JSON config. Kromium is designed for simplicity and ease of use.
-A simple configuration example is the following:
+Kromium is a low-code file transformation pipeline. The pipeline is represented as a JSON config. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
 
 ```
 {                                                                                  
