@@ -1,0 +1,11 @@
+{
+ "SourceBucket": "gs://kromium-src",
+ "DestinationBucket": "gs://kromium-dst",
+ "NameSuffix": "",
+ "Transforms": [
+   {
+     "name": "Identity",
+     "args": {}
+   }
+ ]
+}
