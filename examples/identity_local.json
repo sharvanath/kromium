@@ -1,0 +1,11 @@
+{
+ "SourceBucket": "file:///tmp/src",
+ "DestinationBucket": "file:///tmp/dst",
+ "NameSuffix": "",
+ "Transforms": [
+   {
+     "name": "Identity",
+     "args": {}
+   }
+ ]
+}
