@@ -32,11 +32,15 @@ func main() {
 		file, _ := os.Open(*runConfig)
 		defer file.Close()
 		decoder := json.NewDecoder(file)
-		config := core.SyncConfig{}
+		config := core.PipelineConfig{}
 		err := decoder.Decode(&config)
 		if err != nil {
-			fmt.Println("error:", err)
+			fmt.Println("Error reading the config:", err)
 		}
-		fmt.Println(core.RunSync(context.Background(), config))
+
+		err = core.RunPipeline(context.Background(), config)
+		if err != nil {
+			fmt.Println("Error running pipeline:", err)
+		}
 	}
 }
