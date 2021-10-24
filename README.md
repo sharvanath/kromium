@@ -2,7 +2,7 @@
 
 ## What is Kromium?
 
-Kromium is a no-code file copy/transformation pipeline executor. The pipeline is linear chain of transformations and is expressed using simple JSON config. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
+Kromium is a bulk file copy/transformation tool. The pipeline is linear chain of transformations and is expressed using simple JSON config. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
 
 ```
 {
@@ -30,7 +30,7 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 
 ## Use cases
 - Simple ETL pipelines, e.g. Load CSVs from a bucket to SQL.
-- Copying large amounts of data, e.g. copying a large amounts data from one bucket/SQL table to another destination.
+- Copying large amounts of data, e.g. copying large amounts data from one bucket/SQL table to another destination.
 
 ## Storage providers
 As of now, Kromium only supports GCS and Local filesystem for storage. The support for S3 (and Azure) will be added soon. The source bucket is a uri which should be fully qualified. Following are the prefixes for supported storage solution:
@@ -59,5 +59,5 @@ S3: s3://bucket
 - Resize: takes the new resolution as arguements.
 ```
 
-## Supported runners
-By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
+## Future work
+- By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
