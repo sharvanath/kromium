@@ -60,4 +60,4 @@ S3: s3://bucket
 ```
 
 ## Supported runners
-By default the transformation runs on the local machine. Support for remotely running will be added soon.
+By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
