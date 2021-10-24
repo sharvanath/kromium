@@ -20,7 +20,7 @@ Kromium is a no-code file copy/transformation pipeline executor. The pipeline is
 }
 ```
 
-This configuration will simply read all objects from the `kromium-src` bucket, apply the Identity Transform (which does not change the file) and write the output to the `kromium-dst` bucket. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions.
+This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions.
 
 ## Features
 - Resumeable. Kromium checkpoints progress. So in case of any crashes it can be simply restarted.
