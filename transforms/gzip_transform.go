@@ -19,6 +19,7 @@ type GzipDecompressTransform struct {
 func (i GzipCompressTransform) Transform(dst io.Writer, src io.Reader) (interface{}, error) {
 	compressWriter := gzip.NewWriter(dst)
 	_, err := io.Copy(compressWriter, src)
+	compressWriter.Close()
 	return nil, err
 }
 
@@ -27,7 +28,7 @@ func (i GzipDecompressTransform) Transform(dst io.Writer, src io.Reader) (interf
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = io.Copy(dst, decompressReader)
+	decompressReader.Close()
 	return nil, err
 }

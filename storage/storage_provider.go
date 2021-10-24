@@ -16,5 +16,9 @@ func GetStorageProvider(uri string) StorageProvider {
 	if strings.HasPrefix(uri, "gs://") {
 		return GcsStorageProvider{}
 	}
+
+	if strings.HasPrefix(uri, "file://") {
+		return LocalStorageProvider{}
+	}
 	return nil
 }
