@@ -10,8 +10,6 @@ import (
 	"io"
 )
 
-
-
 func RunPipeline(ctx context.Context, config PipelineConfig) error {
 	inputStorageProvider := storage.GetStorageProvider(config.SourceBucket)
 	outputStorageProvider := storage.GetStorageProvider(config.DestinationBucket)
@@ -28,7 +26,10 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 		fmt.Printf("Processing object: %s from bucket: %s\n", o, config.SourceBucket)
 		var buf *bytes.Buffer
 		for idx, t := range config.Transforms {
-			fmt.Printf("Apply transform [%d] %s\n", idx, t)
+			fmt.Printf("Apply transform [%2d] %15s.", idx, t)
+			if idx != 0 {
+				fmt.Printf(" Input for stage [%2d]: %d.", idx, buf.Len())
+			}
 			var src io.Reader
 			var dst io.Writer
 
@@ -52,7 +53,7 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 				}
 			} else {
 				var output bytes.Buffer
-				dst = bufio.NewWriter(&output)
+				dst = &output
 				buf = &output
 			}
 
@@ -62,6 +63,12 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 			}
 			if _, err := transform.Transform(dst, src); err != nil {
 				return err
+			}
+
+			if idx != len(config.Transforms) - 1 {
+				fmt.Printf(" Output for stage [%2d]: %d\n", idx, buf.Len())
+			} else {
+				fmt.Printf("\n")
 			}
 		}
 		fmt.Printf("Wrote object: %s to bucket: %s\n", o+config.NameSuffix, config.DestinationBucket)

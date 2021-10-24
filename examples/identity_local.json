@@ -6,6 +6,34 @@
    {
      "name": "Identity",
      "args": {}
+   },
+   {
+     "name": "Identity",
+     "args": {}
+   },
+   {
+     "name": "Identity",
+     "args": {}
+   },
+   {
+     "name": "Identity",
+     "args": {}
+   },
+   {
+     "name": "GzipCompress",
+     "args": {}
+   },
+   {
+     "name": "GzipCompress",
+     "args": {}
+   },
+   {
+     "name": "GzipDecompress",
+     "args": {}
+   },
+   {
+     "name": "GzipDecompress",
+     "args": {}
    }
  ]
 }
