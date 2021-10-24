@@ -1,7 +1,6 @@
-package core
+package transforms
 
 import (
-	"github.com/sharvanath/kromium/transforms"
 	"io"
 )
 
@@ -11,9 +10,14 @@ type Transform interface {
 	Transform(dst io.Writer, src io.Reader) (interface{}, error)
 }
 
-func getTransform(name string) Transform {
-	if name == "Identity" {
-		return transforms.IdentityTransform{}
+func GetTransform(name string, _ interface{}) Transform {
+	switch name {
+	case "Identity":
+		return IdentityTransform{}
+	case "GzipCompress":
+		return GzipCompressTransform{}
+	case "GzipDecompress":
+		return GzipDecompressTransform{}
 	}
 	return nil
 }

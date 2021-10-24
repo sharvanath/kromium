@@ -3,53 +3,19 @@ package core
 import (
 	"bufio"
 	"bytes"
-	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
-	"google.golang.org/api/iterator"
+	"github.com/sharvanath/kromium/storage"
+	"github.com/sharvanath/kromium/transforms"
 	"io"
-	"log"
 )
 
-func listFiles(ctx context.Context, bucket string) ([]string, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	query := &storage.Query{Prefix: ""}
-	var names []string
-	it := client.Bucket(bucket).Objects(ctx, query)
-	for {
-		attrs, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		names = append(names, attrs.Name)
-	}
-	return names, nil
-}
 
-func objectReader(ctx context.Context, bucket string, object string) (io.ReadCloser, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client.Bucket(bucket).Object(object).NewReader(ctx)
-}
-
-func objectWriter(ctx context.Context, bucket string, object string) (io.WriteCloser, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client.Bucket(bucket).Object(object).NewWriter(ctx), nil
-}
 
 func RunPipeline(ctx context.Context, config PipelineConfig) error {
-	files, err := listFiles(ctx, config.SourceBucket)
+	inputStorageProvider := storage.GetStorageProvider(config.SourceBucket)
+	outputStorageProvider := storage.GetStorageProvider(config.DestinationBucket)
+	files, err := inputStorageProvider.ListObjects(ctx, config.SourceBucket)
 	if err != nil {
 		return err
 	}
@@ -67,7 +33,7 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 			var dst io.Writer
 
 			if idx == 0 {
-				srcCloser, err := objectReader(ctx, config.SourceBucket, o)
+				srcCloser, err := inputStorageProvider.ObjectReader(ctx, config.SourceBucket, o)
 				defer srcCloser.Close()
 				src = srcCloser
 				if err != nil {
@@ -78,7 +44,7 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 			}
 
 			if idx == len(config.Transforms) - 1 {
-				dstCloser, err := objectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
+				dstCloser, err := outputStorageProvider.ObjectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
 				defer dstCloser.Close()
 				dst = dstCloser
 				if err != nil {
@@ -90,7 +56,11 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 				buf = &output
 			}
 
-			if _, err := getTransform(t.Name).Transform(dst, src); err != nil {
+			transform := transforms.GetTransform(t.Name, t.Args)
+			if transform == nil {
+				return fmt.Errorf("Could not find transform %s.", t.Name)
+			}
+			if _, err := transform.Transform(dst, src); err != nil {
 				return err
 			}
 		}
