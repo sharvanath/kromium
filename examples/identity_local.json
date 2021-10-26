@@ -1,38 +1,10 @@
 {
  "SourceBucket": "file:///tmp/src",
  "DestinationBucket": "file:///tmp/dst",
- "NameSuffix": "",
+ "NameSuffix": "_1",
  "Transforms": [
    {
      "name": "Identity",
-     "args": {}
-   },
-   {
-     "name": "Identity",
-     "args": {}
-   },
-   {
-     "name": "Identity",
-     "args": {}
-   },
-   {
-     "name": "Identity",
-     "args": {}
-   },
-   {
-     "name": "GzipCompress",
-     "args": {}
-   },
-   {
-     "name": "GzipCompress",
-     "args": {}
-   },
-   {
-     "name": "GzipDecompress",
-     "args": {}
-   },
-   {
-     "name": "GzipDecompress",
      "args": {}
    }
  ]

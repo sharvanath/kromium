@@ -35,22 +35,22 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 
 			if idx == 0 {
 				srcCloser, err := inputStorageProvider.ObjectReader(ctx, config.SourceBucket, o)
-				defer srcCloser.Close()
-				src = srcCloser
 				if err != nil {
 					return  err
 				}
+				src = srcCloser
+				defer srcCloser.Close()
 			} else {
 				src = bufio.NewReader(buf)
 			}
 
 			if idx == len(config.Transforms) - 1 {
 				dstCloser, err := outputStorageProvider.ObjectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
-				defer dstCloser.Close()
-				dst = dstCloser
 				if err != nil {
 					return err
 				}
+				defer dstCloser.Close()
+				dst = dstCloser
 			} else {
 				var output bytes.Buffer
 				dst = &output
