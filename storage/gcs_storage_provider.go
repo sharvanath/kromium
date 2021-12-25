@@ -51,3 +51,11 @@ func (g GcsStorageProvider) ObjectWriter(ctx context.Context, bucket string, obj
 	}
 	return client.Bucket(getBucketName(bucket)).Object(object).NewWriter(ctx), nil
 }
+
+func (g GcsStorageProvider) DeleteObject(ctx context.Context, bucket string, object string) error {
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	return client.Bucket(getBucketName(bucket)).Object(object).Delete(ctx)
+}

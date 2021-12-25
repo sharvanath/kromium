@@ -43,3 +43,6 @@ func (g LocalStorageProvider) ObjectWriter(ctx context.Context, bucket string, o
 	return f, nil
 }
 
+func (g LocalStorageProvider) DeleteObject(ctx context.Context, bucket string, object string) error {
+	return os.Remove(getFolderName(bucket) + "/" + object)
+}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/sharvanath/kromium/storage"
 	"github.com/sharvanath/kromium/transforms"
+	"github.com/google/uuid"
 	"io"
 )
 
@@ -22,7 +23,26 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 		return fmt.Errorf("NOOP: Empty pipeline")
 	}
 
-	for _, o := range files {
+	workerState, err := ReadMergedState(ctx, &config, len(files))
+	if err != nil {
+		return err
+	}
+
+	idx := workerState.findRandomEmpty()
+	if idx == -1 {
+		fmt.Printf("All files have been processed. %d\n",len(files))
+		return nil
+	}
+
+	end := idx + 8
+	if end > len(files) {
+		end = len(files)
+	}
+
+	workerId := uuid.New().String()
+
+	fmt.Printf("Starting worker %s with index range %d:%d\n", workerId, idx, end)
+	for _, o := range files[idx:end] {
 		fmt.Printf("Processing object: %s from bucket: %s\n", o, config.SourceBucket)
 		var buf *bytes.Buffer
 		for idx, t := range config.Transforms {
@@ -74,5 +94,7 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 		fmt.Printf("Wrote object: %s to bucket: %s\n", o+config.NameSuffix, config.DestinationBucket)
 	}
 
-	return nil
+	workerState.bitmap[idx >> 3] = 1
+	workerState.workerId = workerId
+	return WriteState(ctx, config.StateBucket, workerState)
 }
