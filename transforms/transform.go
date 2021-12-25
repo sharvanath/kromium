@@ -10,14 +10,20 @@ type Transform interface {
 	Transform(dst io.Writer, src io.Reader) (interface{}, error)
 }
 
-func GetTransform(name string, _ interface{}) Transform {
+func GetTransform(name string, args interface{}) Transform {
 	switch name {
 	case "Identity":
 		return IdentityTransform{}
 	case "GzipCompress":
-		return GzipCompressTransform{}
+		return GzipCompressTransform{args.(map[string]interface{})}
 	case "GzipDecompress":
 		return GzipDecompressTransform{}
+	case "SedTransform":
+		return SedTransform{args.(string)}
+	case "DecryptionTransform":
+		return NewDecryptionTransform(args.(map[string]interface{}))
+	case "EncryptionTransform":
+		return NewEncryptionTransform(args.(map[string]interface{}))
 	}
 	return nil
 }

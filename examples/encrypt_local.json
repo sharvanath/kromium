@@ -2,12 +2,12 @@
  "SourceBucket": "file:///tmp/src",
  "DestinationBucket": "file:///tmp/dst",
  "StateBucket": "file:///tmp/state",
- "NameSuffix": ".gz",
+ "NameSuffix": ".enc",
  "Transforms": [
    {
-     "name": "GzipCompress",
+     "name": "EncryptionTransform",
      "args": {
-       "level": 4
+       "HexKey": "6368616e676520746869732070617373"
      }
    }
  ]

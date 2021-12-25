@@ -5,10 +5,6 @@ import (
 	"io"
 )
 
-type GzipCompressConfig struct {
-	level int
-}
-
 type GzipCompressTransform struct {
 	args map[string]interface{}
 }
@@ -17,8 +13,17 @@ type GzipDecompressTransform struct {
 }
 
 func (i GzipCompressTransform) Transform(dst io.Writer, src io.Reader) (interface{}, error) {
-	compressWriter := gzip.NewWriter(dst)
-	_, err := io.Copy(compressWriter, src)
+	var compressWriter io.WriteCloser
+	var err error
+	if _, ok := i.args["level"]; ok {
+		compressWriter, err = gzip.NewWriterLevel(dst, int(i.args["level"].(float64)))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		compressWriter = gzip.NewWriter(dst)
+	}
+	_, err = io.Copy(compressWriter, src)
 	compressWriter.Close()
 	return nil, err
 }

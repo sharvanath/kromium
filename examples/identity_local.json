@@ -5,8 +5,7 @@
  "NameSuffix": "_1",
  "Transforms": [
    {
-     "name": "Identity",
-     "args": {}
+     "name": "Identity"
    }
  ]
 }
