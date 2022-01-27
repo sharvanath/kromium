@@ -12,14 +12,6 @@ func sha1Str(input string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func sha1StrArray(input []string) string {
-	h := sha1.New()
-	for _, i := range input {
-		h.Write([]byte(i))
-	}
-	return hex.EncodeToString(h.Sum(nil))
-}
-
 type Hasher struct {
 	h hash.Hash
 }
@@ -32,7 +24,7 @@ func (h *Hasher) addStr(input string) {
 	h.h.Write([]byte(input))
 }
 
-func (h *Hasher) addStrArray(input []string) {
+func (h *Hasher) addStrSlice(input []string) {
 	for _, i := range input {
 		h.h.Write([]byte(i))
 	}
