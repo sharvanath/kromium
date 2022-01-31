@@ -11,9 +11,12 @@ import (
 	"io"
 )
 
-func RunPipeline(ctx context.Context, config PipelineConfig) error {
+func RunPipeline(ctx context.Context, config *PipelineConfig) error {
 	inputStorageProvider := storage.GetStorageProvider(config.SourceBucket)
 	outputStorageProvider := storage.GetStorageProvider(config.DestinationBucket)
+	if inputStorageProvider == nil {
+		return fmt.Errorf("Input storage provide not found for %s.", config.SourceBucket)
+	}
 	files, err := inputStorageProvider.ListObjects(ctx, config.SourceBucket)
 	if err != nil {
 		return err
@@ -23,7 +26,7 @@ func RunPipeline(ctx context.Context, config PipelineConfig) error {
 		return fmt.Errorf("NOOP: Empty pipeline")
 	}
 
-	workerState, err := ReadMergedState(ctx, &config, len(files))
+	workerState, err := ReadMergedState(ctx, config, len(files))
 	if err != nil {
 		return err
 	}

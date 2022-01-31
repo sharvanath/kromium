@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/sharvanath/kromium/core"
@@ -29,11 +28,7 @@ func main() {
 
 	if runConfig != nil && *runConfig != "" {
 		fmt.Printf("Running %s\n", *runConfig)
-		file, _ := os.Open(*runConfig)
-		defer file.Close()
-		decoder := json.NewDecoder(file)
-		config := core.PipelineConfig{}
-		err := decoder.Decode(&config)
+		config, err := core.ReadPipelineConfigFile(*runConfig)
 		if err != nil {
 			fmt.Println("Error reading the config:", err)
 		}

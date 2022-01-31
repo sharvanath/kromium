@@ -1,5 +1,10 @@
 package core
 
+import (
+	"encoding/json"
+	"os"
+)
+
 type TransformConfig struct {
 	Name string
 	Args interface{}
@@ -27,4 +32,16 @@ func (p PipelineConfig) getHash() string {
 	}
 	p.Hash = h.getStrHash()
 	return p.Hash
+}
+
+func ReadPipelineConfigFile(configFile string) (*PipelineConfig, error) {
+	file, _ := os.Open(configFile)
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	config := PipelineConfig{}
+	err := decoder.Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
