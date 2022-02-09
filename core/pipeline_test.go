@@ -55,8 +55,63 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func getFiles(dir string) ([]string, error) {
+	dirObj, err := os.Open(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := dirObj.Readdir(1000)
+	if err != nil {
+		return nil, err
+	}
+
+	var fileNames []string
+	for _, f := range files {
+		fileNames = append(fileNames, f.Name())
+	}
+	return fileNames, nil
+}
+
+func sliceToMap(slice []string) map[string]bool {
+	map1 := make(map[string]bool)
+	for _, f := range slice {
+		map1[f] = true
+	}
+	return map1
+}
+
 func TestRunIdentityPipeline(t *testing.T) {
 	ctx := context.Background()
-	err := RunPipeline(ctx, getPipelineConfig())
+	RunPipelineLoop(ctx, getPipelineConfig())
+	files, err := getFiles(src_dir)
 	assert.NoError(t, err, "error running pipeline")
+	filesDst, err := getFiles(dst_dir)
+	assert.NoError(t, err, "error running pipeline")
+	assert.Equal(t, files, filesDst)
+}
+
+func TestRunIdentitySuffixPipeline(t *testing.T) {
+	ctx := context.Background()
+	config := getPipelineConfig()
+	config.NameSuffix = "_test"
+	RunPipelineLoop(ctx, config)
+	files, err := getFiles(src_dir)
+	assert.NoError(t, err, "error running pipeline")
+	filesDst, err := getFiles(dst_dir)
+	assert.NoError(t, err, "error running pipeline")
+	var filesWSuffix []string
+	for _, f := range files {
+		filesWSuffix = append(filesWSuffix, f + "_test")
+	}
+	assert.Equal(t, sliceToMap(filesWSuffix), sliceToMap(filesDst))
+}
+
+func TestSecondPipelineRunSkipsDone(t *testing.T) {
+}
+
+func TestCrashedPipelineRunIsReDone(t *testing.T) {
+}
+
+func TestParallelWorkers(t *testing.T) {
 }

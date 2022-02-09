@@ -33,7 +33,7 @@ func main() {
 			fmt.Println("Error reading the config:", err)
 		}
 
-		err = core.RunPipeline(context.Background(), config)
+		_, err = core.RunPipeline(context.Background(), config)
 		if err != nil {
 			fmt.Println("Error running pipeline:", err)
 		}
