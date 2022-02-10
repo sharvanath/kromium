@@ -58,6 +58,16 @@ S3: s3://bucket
 ```
 - Resize: takes the new resolution as arguements.
 ```
+## Installation
+### From source
+go test
+go install
+$GO_BIN/kromium --run /tmp/identity_local.json (e.g. ~/go/bin/kromium --run /tmp/identity_local.json)
+
+### Docker
+docker build -t kromium .
+Example run:
+docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v /Users/sharva/Workspace/kromium_sync/examples/identity_local.json:/tmp/identity_local.json kromium --run /tmp/identity_local.json
 
 ## Future work
 - By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
