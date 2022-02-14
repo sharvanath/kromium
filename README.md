@@ -66,6 +66,7 @@ $GO_BIN/kromium --run /tmp/identity_local.json (e.g. ~/go/bin/kromium --run /tmp
 
 ### Docker
 docker build -t kromium .
+
 Example run:
 docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v /Users/sharva/Workspace/kromium_sync/examples/identity_local.json:/tmp/identity_local.json kromium --run /tmp/identity_local.json
 
