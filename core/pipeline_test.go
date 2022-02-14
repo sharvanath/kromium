@@ -24,7 +24,8 @@ var src_dir, dst_dir, state_dir string
 
 func setUp(numFiles int) {
 	rand.Seed(time.Now().UnixNano())
-	src_dir = "/tmp/" + randSeq(5)
+	os.Mkdir("/tmp/pipeline_test", 0700)
+	src_dir = "/tmp/pipeline_test/" + randSeq(5)
 	os.Mkdir(src_dir, 0700)
 	dst_dir = src_dir + "_dst"
 	os.Mkdir(dst_dir, 0700)
@@ -33,8 +34,13 @@ func setUp(numFiles int) {
 	var files []string
 	for i := 0; i < numFiles; i++ {
 		file := fmt.Sprintf("%s/%d", src_dir, i)
-		os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
+		f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0700)
+		if err != nil {
+			fmt.Printf("Error in setup %s", err)
+		}
+		f.WriteString("test\n")
 		files = append(files, file)
+		f.Close()
 	}
 }
 
@@ -48,70 +54,143 @@ func getPipelineConfig() *PipelineConfig {
 	return getIdentityPipelineConfig(src_dir, dst_dir, state_dir)
 }
 
-func TestMain(m *testing.M) {
-	setUp(10)
-	code := m.Run()
-	tearDown()
-	os.Exit(code)
-}
-
-func getFiles(dir string) ([]string, error) {
+func getFilesToMtime(dir string) (map[string]string, error) {
 	dirObj, err := os.Open(dir)
+	defer dirObj.Close()
 	if err != nil {
 		return nil, err
 	}
 
-	files, err := dirObj.Readdir(1000)
+	files, err := dirObj.Readdir(-1)
 	if err != nil {
 		return nil, err
 	}
 
-	var fileNames []string
+	fileToMtime := make(map[string]string)
 	for _, f := range files {
-		fileNames = append(fileNames, f.Name())
+		fileToMtime[f.Name()] = f.ModTime().String()
 	}
-	return fileNames, nil
+	return fileToMtime, nil
 }
 
-func sliceToMap(slice []string) map[string]bool {
+func getKeyMap(filesToMTime map[string]string) map[string]bool {
 	map1 := make(map[string]bool)
-	for _, f := range slice {
+	for f, _ := range filesToMTime {
 		map1[f] = true
 	}
 	return map1
 }
 
 func TestRunIdentityPipeline(t *testing.T) {
+	setUp(10)
+	defer tearDown()
 	ctx := context.Background()
 	RunPipelineLoop(ctx, getPipelineConfig())
-	files, err := getFiles(src_dir)
-	assert.NoError(t, err, "error running pipeline")
-	filesDst, err := getFiles(dst_dir)
-	assert.NoError(t, err, "error running pipeline")
-	assert.Equal(t, files, filesDst)
+	files, err := getFilesToMtime(src_dir)
+	assert.NoError(t, err, "test error")
+	filesDst, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	assert.Equal(t, getKeyMap(files), getKeyMap(filesDst))
 }
 
 func TestRunIdentitySuffixPipeline(t *testing.T) {
+	setUp(10)
+	defer tearDown()
 	ctx := context.Background()
 	config := getPipelineConfig()
 	config.NameSuffix = "_test"
 	RunPipelineLoop(ctx, config)
-	files, err := getFiles(src_dir)
-	assert.NoError(t, err, "error running pipeline")
-	filesDst, err := getFiles(dst_dir)
-	assert.NoError(t, err, "error running pipeline")
-	var filesWSuffix []string
-	for _, f := range files {
-		filesWSuffix = append(filesWSuffix, f + "_test")
+	files, err := getFilesToMtime(src_dir)
+	assert.NoError(t, err, "test error")
+	filesDst, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	filesWSuffix := make(map[string]bool)
+	for f, _ := range files {
+		filesWSuffix[f+"_test"] = true
 	}
-	assert.Equal(t, sliceToMap(filesWSuffix), sliceToMap(filesDst))
+	assert.Equal(t, filesWSuffix, getKeyMap(filesDst))
 }
 
 func TestSecondPipelineRunSkipsDone(t *testing.T) {
+	setUp(10)
+	defer tearDown()
+	ctx := context.Background()
+	config := getPipelineConfig()
+
+	// first run
+	RunPipeline(ctx, config)
+	filesDst, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+
+	start_time := time.Now().String()
+	// second run
+	RunPipeline(ctx, config)
+	filesDst1, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	lastRunMtimes := make(map[string]string)
+	assert.Equal(t, 10, len(filesDst1))
+
+	for f, lastM := range filesDst1 {
+		if _, ok := filesDst[f]; ok {
+			lastRunMtimes[f] = lastM
+		} else {
+			assert.Greater(t, lastM, start_time)
+		}
+	}
+	assert.Equal(t, filesDst, lastRunMtimes)
 }
 
 func TestCrashedPipelineRunIsReDone(t *testing.T) {
+	setUp(10)
+	defer tearDown()
+	ctx := context.Background()
+	config := getPipelineConfig()
+
+	// first run
+	RunPipeline(ctx, config)
+	filesDst, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	assert.Greater(t, len(filesDst), 1)
+
+	// remove state files to simulate crash
+	assert.NoError(t, os.RemoveAll(state_dir), "test error")
+	os.Mkdir(state_dir, 0700)
+
+	start_time := time.Now().String()
+	// second run
+	RunPipelineLoop(ctx, config)
+	filesDst1, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	assert.Equal(t, 10, len(filesDst1))
+
+	for _, lastM := range filesDst1 {
+		assert.Greater(t, lastM, start_time)
+	}
 }
 
-func TestParallelWorkers(t *testing.T) {
+func TestRunIdentityPipelineLargeSequential(t *testing.T) {
+	setUp(1000)
+	defer tearDown()
+	ctx := context.Background()
+	err := RunPipelineLoopParallel(ctx, getPipelineConfig(), 1)
+	assert.NoError(t, err, "error running pipeline")
+	files, err := getFilesToMtime(src_dir)
+	assert.NoError(t, err, "test error")
+	filesDst, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	assert.Equal(t, getKeyMap(files), getKeyMap(filesDst))
+}
+
+func TestRunIdentityPipelineLargeParallel(t *testing.T) {
+	setUp(5000)
+	defer tearDown()
+	ctx := context.Background()
+	err := RunPipelineLoopParallel(ctx, getPipelineConfig(), 10)
+	assert.NoError(t, err, "error running pipeline")
+	files, err := getFilesToMtime(src_dir)
+	assert.NoError(t, err, "test error")
+	filesDst, err := getFilesToMtime(dst_dir)
+	assert.NoError(t, err, "test error")
+	fmt.Printf("h1: %d, h2: %d", len(files), len(filesDst))
+	assert.Equal(t, getKeyMap(files), getKeyMap(filesDst))
 }

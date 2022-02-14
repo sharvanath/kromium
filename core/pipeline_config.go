@@ -11,12 +11,12 @@ type TransformConfig struct {
 }
 
 type PipelineConfig struct {
-	SourceBucket string
+	SourceBucket      string
 	DestinationBucket string
-	StateBucket string
-	NameSuffix string
-	Transforms []TransformConfig
-	Hash string
+	StateBucket       string
+	NameSuffix        string
+	Transforms        []TransformConfig
+	Hash              string
 }
 
 func (p PipelineConfig) getHash() string {

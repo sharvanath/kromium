@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sharvanath/kromium/storage"
 	"github.com/sharvanath/kromium/transforms"
+	log "github.com/sirupsen/logrus"
 	"io"
 )
 
@@ -33,27 +34,21 @@ func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
 		return copied, err
 	}
 
-	idx := workerState.findRandomEmpty()
-	if idx == -1 {
-		fmt.Printf("All files have been processed. %d\n",len(files))
+	start, end := workerState.findProcessingRange()
+	if start == -1 {
+		log.Infof("All files have been processed. %d\n", len(files))
 		return copied, nil
 	}
 
-	end := idx + 8
-	if end > len(files) {
-		end = len(files)
-	}
-
 	workerId := uuid.New().String()
-
-	fmt.Printf("Starting worker %s with index range %d:%d\n", workerId, idx, end)
-	for _, o := range files[idx:end] {
-		fmt.Printf("Processing object: %s from bucket: %s\n", o, config.SourceBucket)
+	log.Debugf("Starting worker %s with index range %d:%d\n", workerId, start, end)
+	for _, o := range files[start:end] {
+		log.Debugf("Processing object: %s from bucket: %s\n", o, config.SourceBucket)
 		var buf *bytes.Buffer
 		for idx, t := range config.Transforms {
-			fmt.Printf("Apply transform [%2d] %15s.", idx, t)
+			log.Debugf("Apply transform [%2d] %15s.", idx, t)
 			if idx != 0 {
-				fmt.Printf(" Input for stage [%2d]: %d.", idx, buf.Len())
+				log.Debugf(" Input for stage [%2d]: %d.", idx, buf.Len())
 			}
 			var src io.Reader
 			var dst io.Writer
@@ -61,7 +56,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
 			if idx == 0 {
 				srcCloser, err := inputStorageProvider.ObjectReader(ctx, config.SourceBucket, o)
 				if err != nil {
-					return  copied, err
+					return copied, err
 				}
 				src = srcCloser
 				defer srcCloser.Close()
@@ -69,7 +64,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
 				src = bufio.NewReader(buf)
 			}
 
-			if idx == len(config.Transforms) - 1 {
+			if idx == len(config.Transforms)-1 {
 				dstCloser, err := outputStorageProvider.ObjectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
 				if err != nil {
 					return copied, err
@@ -90,30 +85,55 @@ func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
 				return copied, err
 			}
 
-			if idx != len(config.Transforms) - 1 {
-				fmt.Printf(" Output for stage [%2d]: %d\n", idx, buf.Len())
+			if idx != len(config.Transforms)-1 {
+				log.Debugf(" Output for stage [%2d]: %d\n", idx, buf.Len())
 			} else {
-				fmt.Printf("\n")
+				log.Debugf("\n")
 			}
 		}
 		copied += 1
-		fmt.Printf("Wrote object: %s to bucket: %s\n", o+config.NameSuffix, config.DestinationBucket)
+		log.Debugf("Wrote object: %s to bucket: %s\n", o+config.NameSuffix, config.DestinationBucket)
 	}
 
-	workerState.bitmap[idx >> 3] = 1
+	workerState.setProcessed(start)
 	workerState.workerId = workerId
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 
-func RunPipelineLoop(ctx context.Context, config *PipelineConfig) error {
-	for ; ; {
+func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channel chan error) {
+	total := 0
+	for {
 		count, err := RunPipeline(ctx, config)
 		if err != nil {
-			return err
+			channel <- err
+			return
 		}
+		total += count
 		if count <= 0 {
 			break
 		}
 	}
+	channel <- nil
+}
+
+func RunPipelineLoopParallel(ctx context.Context, config *PipelineConfig, parallelism int) error {
+	var channels []chan error
+	for i := 0; i < parallelism; i += 1 {
+		channel := make(chan error)
+		channels = append(channels, channel)
+		go runPipelineLoopInternal(ctx, config, channel)
+	}
+
+	for _, channel := range channels {
+		e := <-channel
+		if e != nil {
+			return e
+		}
+	}
+
 	return nil
+}
+
+func RunPipelineLoop(ctx context.Context, config *PipelineConfig) error {
+	return RunPipelineLoopParallel(ctx, config, 1)
 }
