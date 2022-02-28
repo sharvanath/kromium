@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+	"github.com/sharvanath/kromium/storage"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,6 +14,16 @@ func getIdentityPipelineConfig(src string, dst string, state string) *PipelineCo
 	config.StateBucket = "file://" + state
 	config.NameSuffix = ""
 
+	var err error
+	if config.sourceStorageProvider, err = storage.GetStorageProvider(context.Background(), config.SourceBucket); err != nil {
+		return nil
+	}
+	if config.destStorageProvider, err = storage.GetStorageProvider(context.Background(), config.DestinationBucket); err != nil {
+		return nil
+	}
+	if config.stateStorageProvider, err = storage.GetStorageProvider(context.Background(), config.StateBucket); err != nil {
+		return nil
+	}
 	identityTransform := TransformConfig{}
 	identityTransform.Name = "Identity"
 	config.Transforms = append(config.Transforms, identityTransform)

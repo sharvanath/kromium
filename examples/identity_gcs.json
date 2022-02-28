@@ -1,5 +1,5 @@
 {
- "SourceBucket": "gs://kromium-src",
+ "SourceBucket": "file:///tmp/src",
  "DestinationBucket": "gs://kromium-dst",
  "NameSuffix": "",
  "Transforms": [

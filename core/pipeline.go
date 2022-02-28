@@ -5,27 +5,43 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 	"github.com/google/uuid"
-	"github.com/sharvanath/kromium/storage"
 	"github.com/sharvanath/kromium/transforms"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"sync/atomic"
+	"time"
 )
 
+var processedCount int32
+
+func updateStatus(text string) {
+	topBox := widgets.NewParagraph()
+	topBox.Text = text
+	topBox.TextStyle.Fg = 0
+	topBox.SetRect(0, 0, 25,  3)
+	ui.Render(topBox)
+}
+
+func updateWorkerStatus(idx int, text string) {
+	topBox := widgets.NewParagraph()
+	topBox.Text = text
+	topBox.TextStyle.Fg = 0
+	topBox.SetRect(0, idx * 3 + 3, 25,  idx * 3 + 6)
+	ui.Render(topBox)
+}
+
 // Returns the number of files copied.
-func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
-	inputStorageProvider := storage.GetStorageProvider(config.SourceBucket)
-	outputStorageProvider := storage.GetStorageProvider(config.DestinationBucket)
+func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int) (int, error) {
 	copied := 0
-	if inputStorageProvider == nil {
-		return copied, fmt.Errorf("Input storage provide not found for %s.", config.SourceBucket)
-	}
-	files, err := inputStorageProvider.ListObjects(ctx, config.SourceBucket)
+	files, err := config.sourceStorageProvider.ListObjects(ctx, config.SourceBucket)
 	if err != nil {
 		return copied, err
 	}
 
-	if len(config.Transforms) == 0 {
+	if len(config.Transforms) == 0 || len(files) == 0  {
 		return copied, fmt.Errorf("NOOP: Empty pipeline")
 	}
 
@@ -36,40 +52,45 @@ func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
 
 	start, end := workerState.findProcessingRange()
 	if start == -1 {
-		log.Infof("All files have been processed. %d\n", len(files))
+		log.Debugf("[Worker %d] All files have been processed. %d\n", threadIdx, len(files))
 		return copied, nil
 	}
 
 	workerId := uuid.New().String()
-	log.Debugf("Starting worker %s with index range %d:%d\n", workerId, start, end)
+	log.Debugf("[Worker %d] Starting worker %s with index range %d:%d\n", threadIdx, workerId, start, end)
+
 	for _, o := range files[start:end] {
-		log.Debugf("Processing object: %s from bucket: %s\n", o, config.SourceBucket)
+		log.Debugf("[Worker %d] Processing object: %s from bucket: %s\n", threadIdx, o, config.SourceBucket)
 		var buf *bytes.Buffer
+		var err error
+		var srcCloser io.ReadCloser
+		var dstCloser io.WriteCloser
+
 		for idx, t := range config.Transforms {
-			log.Debugf("Apply transform [%2d] %15s.", idx, t)
+			log.Debugf("[Worker %d] Apply transform [%2d] %15s.", threadIdx, idx, t)
 			if idx != 0 {
-				log.Debugf(" Input for stage [%2d]: %d.", idx, buf.Len())
+				log.Debugf("[Worker %d] Input for stage [%2d]: %d.", threadIdx, idx, buf.Len())
 			}
 			var src io.Reader
 			var dst io.Writer
 
 			if idx == 0 {
-				srcCloser, err := inputStorageProvider.ObjectReader(ctx, config.SourceBucket, o)
+				srcCloser, err = config.sourceStorageProvider.ObjectReader(ctx, config.SourceBucket, o)
 				if err != nil {
-					return copied, err
+					srcCloser = nil
+					break
 				}
 				src = srcCloser
-				defer srcCloser.Close()
 			} else {
 				src = bufio.NewReader(buf)
 			}
 
 			if idx == len(config.Transforms)-1 {
-				dstCloser, err := outputStorageProvider.ObjectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
+				dstCloser, err = config.destStorageProvider.ObjectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
 				if err != nil {
-					return copied, err
+					dstCloser = nil
+					break
 				}
-				defer dstCloser.Close()
 				dst = dstCloser
 			} else {
 				var output bytes.Buffer
@@ -79,61 +100,81 @@ func RunPipeline(ctx context.Context, config *PipelineConfig) (int, error) {
 
 			transform := transforms.GetTransform(t.Name, t.Args)
 			if transform == nil {
-				return copied, fmt.Errorf("Could not find transform %s.", t.Name)
+				err = fmt.Errorf("Could not find transform %s.", t.Name)
+				break
 			}
+
 			if _, err := transform.Transform(dst, src); err != nil {
-				return copied, err
+				break
 			}
 
 			if idx != len(config.Transforms)-1 {
-				log.Debugf(" Output for stage [%2d]: %d\n", idx, buf.Len())
+				log.Debugf("[Worker %d] Output for stage [%2d]: %d\n", threadIdx, idx, buf.Len())
 			} else {
 				log.Debugf("\n")
 			}
+
+			srcCloser.Close()
+			dstCloser.Close()
+		}
+
+		if err != nil {
+			log.Warnf("[Worker %d] Failed during pipeline %s", threadIdx, err)
+			if srcCloser != nil {
+				srcCloser.Close()
+			}
+			if dstCloser != nil {
+				dstCloser.Close()
+			}
+			return copied, err
 		}
 		copied += 1
-		log.Debugf("Wrote object: %s to bucket: %s\n", o+config.NameSuffix, config.DestinationBucket)
+		log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, o+config.NameSuffix, config.DestinationBucket)
 	}
 
 	workerState.setProcessed(start)
 	workerState.workerId = workerId
+	updateStatus(fmt.Sprintf("Done %d/%d", workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8))
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 
-func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channel chan error) {
+func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channel chan error, threadIdx int) {
 	total := 0
 	for {
-		count, err := RunPipeline(ctx, config)
+		count, err := RunPipeline(ctx, config, threadIdx)
 		if err != nil {
 			channel <- err
-			return
 		}
-		total += count
 		if count <= 0 {
 			break
 		}
+		total += count
+		updateWorkerStatus(threadIdx, fmt.Sprintf("[Worker %d] Processed %d objects.", threadIdx, total))
 	}
+	atomic.AddInt32(&processedCount, int32(total))
 	channel <- nil
 }
 
-func RunPipelineLoopParallel(ctx context.Context, config *PipelineConfig, parallelism int) error {
+func RunPipelineLoop(ctx context.Context, config *PipelineConfig, parallelism int) error {
+	if err := ui.Init(); err != nil {
+		log.Fatalf("failed to initialize termui: %v", err)
+	}
+	start := time.Now()
 	var channels []chan error
 	for i := 0; i < parallelism; i += 1 {
 		channel := make(chan error)
 		channels = append(channels, channel)
-		go runPipelineLoopInternal(ctx, config, channel)
+		go runPipelineLoopInternal(ctx, config, channel, i)
 	}
 
 	for _, channel := range channels {
 		e := <-channel
 		if e != nil {
+			ui.Close()
 			return e
 		}
 	}
-
+	ui.Close()
+	fmt.Printf("Processed %d files in %.2f seconds\n", processedCount, time.Since(start).Seconds())
 	return nil
-}
-
-func RunPipelineLoop(ctx context.Context, config *PipelineConfig) error {
-	return RunPipelineLoopParallel(ctx, config, 1)
 }

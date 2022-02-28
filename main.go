@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/sharvanath/kromium/core"
+	"net/http"
 	"os"
+	_ "net/http/pprof"
 )
 
 const version = "beta-0.1"
@@ -14,7 +16,12 @@ func main() {
 	printVersion := flag.Bool("version", false, "Print version")
 	printUsage := flag.Bool("help", false, "Print command line usage")
 	runConfig := flag.String("run", "", "The config to run sync")
+	parallelism := flag.Int("parallelism", 4, "The parallelism for the run loop")
 	flag.Parse()
+
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 
 	if *printVersion {
 		fmt.Printf("Kromium Version: %s\n", version)
@@ -28,12 +35,13 @@ func main() {
 
 	if runConfig != nil && *runConfig != "" {
 		fmt.Printf("Running %s\n", *runConfig)
-		config, err := core.ReadPipelineConfigFile(*runConfig)
+		config, err := core.ReadPipelineConfigFile(context.Background(), *runConfig)
 		if err != nil {
 			fmt.Println("Error reading the config:", err)
 		}
+		defer config.Close()
 
-		_, err = core.RunPipeline(context.Background(), config)
+		err = core.RunPipelineLoop(context.Background(), config, *parallelism)
 		if err != nil {
 			fmt.Println("Error running pipeline:", err)
 		}

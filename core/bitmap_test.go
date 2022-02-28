@@ -14,7 +14,7 @@ func TestCreateBitMap(t *testing.T) {
 	assert.Equal(t, 2, len(b.slice))
 	// Size only 7 bits are used, the last one
 	// should be set at initialization
-	assert.Equal(t, byte(1 << 7), b.slice[1])
+	assert.Equal(t, byte(1<<7), b.slice[1])
 }
 
 func TestSet(t *testing.T) {
@@ -32,7 +32,7 @@ func TestFindEmptyBit(t *testing.T) {
 
 func TestFindSingleEmptyBit(t *testing.T) {
 	b := newBitmap(21)
-	for i := 0; i < 21; i += 1  {
+	for i := 0; i < 21; i += 1 {
 		b.set(i)
 	}
 	b.clear(9)
@@ -41,7 +41,7 @@ func TestFindSingleEmptyBit(t *testing.T) {
 
 func TestFindNoEmptyBit(t *testing.T) {
 	b := newBitmap(21)
-	for i := 0; i < 21; i += 1  {
+	for i := 0; i < 21; i += 1 {
 		b.set(i)
 	}
 	assert.Equal(t, -1, b.findRandomEmpty())

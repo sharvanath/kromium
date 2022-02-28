@@ -85,7 +85,7 @@ func TestRunIdentityPipeline(t *testing.T) {
 	setUp(10)
 	defer tearDown()
 	ctx := context.Background()
-	RunPipelineLoop(ctx, getPipelineConfig())
+	RunPipelineLoop(ctx, getPipelineConfig(), 1)
 	files, err := getFilesToMtime(src_dir)
 	assert.NoError(t, err, "test error")
 	filesDst, err := getFilesToMtime(dst_dir)
@@ -99,7 +99,7 @@ func TestRunIdentitySuffixPipeline(t *testing.T) {
 	ctx := context.Background()
 	config := getPipelineConfig()
 	config.NameSuffix = "_test"
-	RunPipelineLoop(ctx, config)
+	RunPipelineLoop(ctx, config, 1)
 	files, err := getFilesToMtime(src_dir)
 	assert.NoError(t, err, "test error")
 	filesDst, err := getFilesToMtime(dst_dir)
@@ -158,7 +158,7 @@ func TestCrashedPipelineRunIsReDone(t *testing.T) {
 
 	start_time := time.Now().String()
 	// second run
-	RunPipelineLoop(ctx, config)
+	RunPipelineLoop(ctx, config, 1)
 	filesDst1, err := getFilesToMtime(dst_dir)
 	assert.NoError(t, err, "test error")
 	assert.Equal(t, 10, len(filesDst1))
@@ -172,7 +172,7 @@ func TestRunIdentityPipelineLargeSequential(t *testing.T) {
 	setUp(1000)
 	defer tearDown()
 	ctx := context.Background()
-	err := RunPipelineLoopParallel(ctx, getPipelineConfig(), 1)
+	err := RunPipelineLoop(ctx, getPipelineConfig(), 1)
 	assert.NoError(t, err, "error running pipeline")
 	files, err := getFilesToMtime(src_dir)
 	assert.NoError(t, err, "test error")
@@ -183,9 +183,9 @@ func TestRunIdentityPipelineLargeSequential(t *testing.T) {
 
 func TestRunIdentityPipelineLargeParallel(t *testing.T) {
 	setUp(5000)
-	defer tearDown()
+	//defer tearDown()
 	ctx := context.Background()
-	err := RunPipelineLoopParallel(ctx, getPipelineConfig(), 10)
+	err := RunPipelineLoop(ctx, getPipelineConfig(), 10)
 	assert.NoError(t, err, "error running pipeline")
 	files, err := getFilesToMtime(src_dir)
 	assert.NoError(t, err, "test error")

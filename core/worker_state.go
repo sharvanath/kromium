@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sharvanath/kromium/storage"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
-	log "github.com/sirupsen/logrus"
 )
 
 // The batch size
-const cBatchSize = 10
+const cBatchSize = 5
 
 // Only the byte slice is serialized to the state file. workerId is used for the state file name.
 type WorkerState struct {
@@ -19,22 +18,23 @@ type WorkerState struct {
 	m *bitmap
 	// The following is just in-memory state
 	numFiles      int
+	processed     int
 	workerId      string
-	transformHash string
 	mergedFiles   []string
+	pipeline      *PipelineConfig
 }
 
-func createState(config *PipelineConfig, numFiles int) *WorkerState {
+func createState(pipeline *PipelineConfig, numFiles int) *WorkerState {
 	var w WorkerState
 	// Add an extra partial batch in case numFile is not perfectly divisible.
 	b_size := numFiles / cBatchSize
-	if numFiles % cBatchSize != 0 {
+	if numFiles%cBatchSize != 0 {
 		b_size += 1
 	}
 
+	w.pipeline = pipeline
 	w.numFiles = numFiles
 	w.m = newBitmap(b_size)
-	w.transformHash = config.getHash()
 	return &w
 }
 
@@ -48,7 +48,7 @@ func (w *WorkerState) mergeState(w2 WorkerState) error {
 }
 
 func (w *WorkerState) fileName() string {
-	return w.transformHash + "_" + sha1Str(w.workerId)
+	return w.pipeline.getHash() + "_" + sha1Str(w.workerId)
 }
 
 // Process files [start, end)
@@ -57,7 +57,7 @@ func (w *WorkerState) findProcessingRange() (int, int) {
 	if idx == -1 {
 		return -1, -1
 	}
-	end := idx * cBatchSize + cBatchSize
+	end := idx*cBatchSize + cBatchSize
 	if end > w.numFiles {
 		end = w.numFiles
 	}
@@ -70,8 +70,7 @@ func (w *WorkerState) setProcessed(startOff int) {
 }
 
 func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int) (*WorkerState, error) {
-	stateStorageProvider := storage.GetStorageProvider(pipeline.StateBucket)
-	files, err := stateStorageProvider.ListObjects(ctx, pipeline.StateBucket)
+	files, err := pipeline.stateStorageProvider.ListObjects(ctx, pipeline.StateBucket)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +82,7 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 			log.Warnf("Ignoring state file %s not matching transform hash %s", f, pipeline.getHash())
 			continue
 		}
-		reader, err := stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, f)
+		reader, err := pipeline.stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, f)
 		// The file could be deleted by the time we get to it.
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, err
@@ -91,6 +90,7 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 
 		if err == nil {
 			var currState WorkerState
+			currState.pipeline = pipeline
 			m, err := readFrom(reader)
 			reader.Close()
 			if err != nil {
@@ -115,16 +115,15 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 }
 
 func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
-	stateStorageProvider := storage.GetStorageProvider(stateBucket)
-	writer, err := stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
+	writer, err := w.pipeline.stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
 	w.m.writeTo(writer)
+	writer.Close()
 	for _, f := range w.mergedFiles {
 		// Ignore errors during delete since the object might be already deleted
-		stateStorageProvider.DeleteObject(ctx, stateBucket, f)
+		w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, f)
 	}
 	return nil
 }

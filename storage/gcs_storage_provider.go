@@ -9,20 +9,30 @@ import (
 	"strings"
 )
 
-type GcsStorageProvider struct {}
+type GcsStorageProvider struct {
+	client *storage.Client
+}
+
+func newGcsStorageProvider(ctx context.Context) (StorageProvider, error) {
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &GcsStorageProvider{ client }, nil
+}
 
 func getBucketName(bucket string) string {
 	return strings.TrimPrefix(bucket, "gs://")
 }
 
+func (g GcsStorageProvider) Close() error {
+	return g.client.Close()
+}
+
 func (g GcsStorageProvider) ListObjects(ctx context.Context, bucket string) ([]string, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
 	query := &storage.Query{Prefix: ""}
 	var names []string
-	it := client.Bucket(getBucketName(bucket)).Objects(ctx, query)
+	it := g.client.Bucket(getBucketName(bucket)).Objects(ctx, query)
 	for {
 		attrs, err := it.Next()
 		if err == iterator.Done {
@@ -36,26 +46,15 @@ func (g GcsStorageProvider) ListObjects(ctx context.Context, bucket string) ([]s
 	return names, nil
 }
 
+// The caller must close
 func (g GcsStorageProvider) ObjectReader(ctx context.Context, bucket string, object string) (io.ReadCloser, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client.Bucket(getBucketName(bucket)).Object(object).NewReader(ctx)
+	return g.client.Bucket(getBucketName(bucket)).Object(object).NewReader(ctx)
 }
 
 func (g GcsStorageProvider) ObjectWriter(ctx context.Context, bucket string, object string) (io.WriteCloser, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client.Bucket(getBucketName(bucket)).Object(object).NewWriter(ctx), nil
+	return g.client.Bucket(getBucketName(bucket)).Object(object).NewWriter(ctx), nil
 }
 
 func (g GcsStorageProvider) DeleteObject(ctx context.Context, bucket string, object string) error {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-	return client.Bucket(getBucketName(bucket)).Object(object).Delete(ctx)
+	return g.client.Bucket(getBucketName(bucket)).Object(object).Delete(ctx)
 }
