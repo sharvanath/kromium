@@ -21,7 +21,7 @@ func updateStatus(text string) {
 	topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
-	topBox.SetRect(0, 0, 25,  3)
+	topBox.SetRect(0, 0, 45,  3)
 	ui.Render(topBox)
 }
 
@@ -29,12 +29,12 @@ func updateWorkerStatus(idx int, text string) {
 	topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
-	topBox.SetRect(0, idx * 3 + 3, 25,  idx * 3 + 6)
+	topBox.SetRect(0, idx * 3 + 3, 45,  idx * 3 + 6)
 	ui.Render(topBox)
 }
 
 // Returns the number of files copied.
-func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int) (int, error) {
+func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, renderUi bool) (int, error) {
 	copied := 0
 	files, err := config.sourceStorageProvider.ListObjects(ctx, config.SourceBucket)
 	if err != nil {
@@ -134,14 +134,16 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int) (in
 
 	workerState.setProcessed(start)
 	workerState.workerId = workerId
-	updateStatus(fmt.Sprintf("Done %d/%d", workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8))
+	if renderUi {
+		updateStatus(fmt.Sprintf("Done %d/%d", workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8))
+	}
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 
-func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channel chan error, threadIdx int) {
+func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channel chan error, threadIdx int, renderUi bool) {
 	total := 0
 	for {
-		count, err := RunPipeline(ctx, config, threadIdx)
+		count, err := RunPipeline(ctx, config, threadIdx, renderUi)
 		if err != nil {
 			channel <- err
 		}
@@ -149,32 +151,41 @@ func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channe
 			break
 		}
 		total += count
-		updateWorkerStatus(threadIdx, fmt.Sprintf("[Worker %d] Processed %d objects.", threadIdx, total))
+		if renderUi {
+			updateWorkerStatus(threadIdx, fmt.Sprintf("[Worker %d] Processed %d objects.", threadIdx, total))
+		}
 	}
 	atomic.AddInt32(&processedCount, int32(total))
 	channel <- nil
 }
 
-func RunPipelineLoop(ctx context.Context, config *PipelineConfig, parallelism int) error {
-	if err := ui.Init(); err != nil {
-		log.Fatalf("failed to initialize termui: %v", err)
+func RunPipelineLoop(ctx context.Context, config *PipelineConfig, parallelism int, renderUi bool) error {
+	if renderUi {
+		if err := ui.Init(); err != nil {
+			log.Fatalf("failed to initialize termui: %v", err)
+		}
 	}
 	start := time.Now()
 	var channels []chan error
 	for i := 0; i < parallelism; i += 1 {
 		channel := make(chan error)
 		channels = append(channels, channel)
-		go runPipelineLoopInternal(ctx, config, channel, i)
+		go runPipelineLoopInternal(ctx, config, channel, i, renderUi)
 	}
 
 	for _, channel := range channels {
 		e := <-channel
 		if e != nil {
-			ui.Close()
+			if renderUi {
+				ui.Close()
+			}
 			return e
 		}
 	}
-	ui.Close()
+
+	if renderUi {
+		ui.Close()
+	}
 	fmt.Printf("Processed %d files in %.2f seconds\n", processedCount, time.Since(start).Seconds())
 	return nil
 }

@@ -41,7 +41,7 @@ func main() {
 		}
 		defer config.Close()
 
-		err = core.RunPipelineLoop(context.Background(), config, *parallelism)
+		err = core.RunPipelineLoop(context.Background(), config, *parallelism, true)
 		if err != nil {
 			fmt.Println("Error running pipeline:", err)
 		}
