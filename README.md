@@ -1,4 +1,5 @@
 # Kromium
+**Kromium is currently in development and has no release. Feel free to play with it at your own risk.**
 
 ## What is Kromium?
 
