@@ -29,6 +29,7 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 
 ## Use cases
 - Copying large amounts of data, e.g. copying large amounts data from one bucket/SQL table to another destination.
+- ETL workloads, Reading bulk data, Transforming it and writing back to some other location.
 
 ## Storage providers
 As of now, Kromium only supports GCS and Local filesystem for storage. The support for S3 (and Azure) will be added soon. The source bucket is a uri which should be fully qualified. Following are the prefixes for supported storage solution:
