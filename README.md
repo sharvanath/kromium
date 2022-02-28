@@ -2,7 +2,7 @@
 
 ## What is Kromium?
 
-Kromium is a bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple JSON config. Each transform is independant and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
+Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple JSON config. Each transform is independant and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
 
 ```
 {
