@@ -9,6 +9,7 @@ Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linea
 {
  "SourceBucket": "gs://kromium-src",
  "DestinationBucket": "gs://kromium-dst",
+ "StateBucket": "gs://kromium-state",
  "NameSuffix": ".gz",
  "Transforms": [
    {
@@ -21,7 +22,7 @@ Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linea
 }
 ```
 
-This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions.
+This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The checkpointing state will be written to `kromium-state`. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions.
 
 ## Features
 - Resumeable. Kromium checkpoints progress. So in case of any crashes it can be simply restarted.
