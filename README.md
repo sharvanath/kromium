@@ -64,8 +64,8 @@ Example run:
 docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v /Users/sharva/Workspace/kromium_sync/examples/identity_local.json:/tmp/identity_local.json kromium --run /tmp/identity_local.json
 
 ## Future work
-- Json for pipeline config is great for simplicity but is error prone. The language will be changed to CUE.
+- Config validation. Json for pipeline config is great for simplicity but is error prone. The language will be changed to CUE.
 - S3 storage provider. SQL storage provider.
-- Resource optimized. Kromium employs storage source/sink optimizations to optimize the overall resource usage for the job.
+- Resource optimized. Kromium should employ storage source/sink optimizations to optimize the overall resource usage for the job.
 - By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
 - Add SQL/CSV transforms to support simple ETL pipelines, e.g. Load CSVs from a bucket to SQL.
