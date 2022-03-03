@@ -165,6 +165,11 @@ func RunPipelineLoop(ctx context.Context, config *PipelineConfig, parallelism in
 			log.Fatalf("failed to initialize termui: %v", err)
 		}
 	}
+
+	if parallelism <= 0 {
+		return fmt.Errorf("illegal parallelism: %d", parallelism)
+	}
+
 	start := time.Now()
 	var channels []chan error
 	for i := 0; i < parallelism; i += 1 {
