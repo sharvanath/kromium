@@ -30,12 +30,14 @@ func main() {
 		config, err := core.ReadPipelineConfigFile(context.Background(), *runConfig)
 		if err != nil {
 			fmt.Println("Error reading the config:", err)
+			os.Exit(1)
 		}
 		defer config.Close()
 
 		err = core.RunPipelineLoop(context.Background(), config, *parallelism, true)
 		if err != nil {
 			fmt.Println("Error running pipeline:", err)
+			os.Exit(1)
 		}
 	} else {
 		flag.Usage()
