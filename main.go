@@ -10,7 +10,7 @@ import (
 	_ "net/http/pprof"
 )
 
-const version = "beta-0.1"
+const version = "0.1.0"
 
 func main() {
 	printVersion := flag.Bool("version", false, "Print version")
