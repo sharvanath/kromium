@@ -14,7 +14,6 @@ const version = "beta-0.1"
 
 func main() {
 	printVersion := flag.Bool("version", false, "Print version")
-	printUsage := flag.Bool("help", false, "Print command line usage")
 	runConfig := flag.String("run", "", "The config to run sync")
 	parallelism := flag.Int("parallelism", 4, "The parallelism for the run loop")
 	flag.Parse()
@@ -26,14 +25,7 @@ func main() {
 	if *printVersion {
 		fmt.Printf("Kromium Version: %s\n", version)
 		os.Exit(0)
-	}
-
-	if *printUsage {
-		flag.Usage()
-		os.Exit(0)
-	}
-
-	if runConfig != nil && *runConfig != "" {
+	} else if runConfig != nil && *runConfig != "" {
 		fmt.Printf("Running %s\n", *runConfig)
 		config, err := core.ReadPipelineConfigFile(context.Background(), *runConfig)
 		if err != nil {
@@ -45,5 +37,8 @@ func main() {
 		if err != nil {
 			fmt.Println("Error running pipeline:", err)
 		}
+	} else {
+		flag.Usage()
+		os.Exit(0)
 	}
 }
