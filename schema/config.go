@@ -54,15 +54,16 @@ var schema = `#BaseTransform: {
  SourceBucket: #Bucket,
  DestinationBucket: #Bucket,
  StateBucket: #Bucket,
- NameSuffix: string,
+ NameSuffix?: string,
  Transforms: [...#Transform]
 }`
 
 func validatePipelineConfigString(config string) error {
 	ctx := cuecontext.New()
-	schemaVal:= ctx.CompileString(schema)
-	configVal := ctx.CompileString(config)
-	return schemaVal.LookupPath(cue.ParsePath("#Pipeline")).Subsume(configVal)
+
+	combinedVal := schema + "\n _c: #Pipeline& " + config
+	val := ctx.CompileString(combinedVal)
+	return val.Validate(cue.Concrete(true))
 }
 
 

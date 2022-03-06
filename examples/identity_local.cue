@@ -1,11 +1,10 @@
 {
- SourceBucket: "file:///tmp/src",
- DestinationBucket: "file:///tmp/dst",
- StateBucket: "file:///tmp/state",
- NameSuffix: "_1",
+ SourceBucket: "file:///tmp/src"
+ DestinationBucket: "file:///tmp/dst"
+ StateBucket: "file:///tmp/state"
  Transforms: [
    {
-     "Type": "Identity"
+    Type: "Identity"
    }
  ]
 }

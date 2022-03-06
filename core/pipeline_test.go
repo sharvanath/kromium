@@ -158,7 +158,7 @@ func TestCrashedPipelineRunIsReDone(t *testing.T) {
 	assert.NoError(t, os.RemoveAll(state_dir), "test error")
 	os.Mkdir(state_dir, 0700)
 
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	// second run
 	RunPipelineLoop(ctx, config, 1, false)
 	filesAfter, err := getFilesToMtime(dst_dir)
