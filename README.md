@@ -7,7 +7,7 @@ Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linea
 
 ```
 {
- SourceBucket: "gs://kromium-src,
+ SourceBucket: "gs://kromium-src",
  DestinationBucket: "gs://kromium-dst",
  StateBucket: "gs://kromium-state",
  NameSuffix: ".gz",
