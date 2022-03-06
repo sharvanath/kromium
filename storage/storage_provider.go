@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 )
@@ -23,5 +24,5 @@ func GetStorageProvider(ctx context.Context, uri string) (StorageProvider, error
 	if strings.HasPrefix(uri, "file://") {
 		return &LocalStorageProvider{}, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("No storage provider found for %s", uri)
 }

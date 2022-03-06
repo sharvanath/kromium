@@ -25,7 +25,7 @@ func getIdentityPipelineConfig(src string, dst string, state string) *PipelineCo
 		return nil
 	}
 	identityTransform := TransformConfig{}
-	identityTransform.Name = "Identity"
+	identityTransform.Type = "Identity"
 	config.Transforms = append(config.Transforms, identityTransform)
 
 	return &config

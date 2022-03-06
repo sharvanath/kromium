@@ -98,9 +98,9 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 				buf = &output
 			}
 
-			transform := transforms.GetTransform(t.Name, t.Args)
+			transform := transforms.GetTransform(t.Type, t.Args)
 			if transform == nil {
-				err = fmt.Errorf("Could not find transform %s.", t.Name)
+				err = fmt.Errorf("Could not find transform %s.", t.Type)
 				break
 			}
 
