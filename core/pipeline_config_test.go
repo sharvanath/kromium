@@ -27,7 +27,7 @@ func getIdentityPipelineConfig(src string, dst string, state string) *PipelineCo
 	identityTransform := TransformConfig{}
 	identityTransform.Type = "Identity"
 	config.Transforms = append(config.Transforms, identityTransform)
-
+	config.Init(context.Background())
 	return &config
 }
 
@@ -35,6 +35,7 @@ func TestConfigHashNotEqualDifferentDestinationBucket(t *testing.T) {
 	config1 := getIdentityPipelineConfig("a", "b", "c")
 	config2 := *config1
 	config2.DestinationBucket = "file:///tmp/dst_2"
+	config2.Init(context.Background())
 	assert.NotEqual(t, config1.getHash(), config2.getHash())
 }
 
@@ -42,5 +43,6 @@ func TestConfigHashEqualDifferentStateBucket(t *testing.T) {
 	config1 := getIdentityPipelineConfig("a", "b", "c")
 	config2 := *config1
 	config2.StateBucket = "file:///tmp/dst_2"
+	config2.Init(context.Background())
 	assert.Equal(t, config1.getHash(), config2.getHash())
 }

@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"github.com/sharvanath/kromium/storage"
 	"log"
 )
@@ -60,7 +59,6 @@ func (p *PipelineConfig) Init(ctx context.Context) error {
 		h.addStr(t.Type)
 	}
 	p.Hash = h.getStrHash()
-	fmt.Printf("ss: %s\n", p.sourceStorageProvider)
 	return nil
 }
 

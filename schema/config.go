@@ -1,4 +1,4 @@
-package config
+package schema
 
 import (
 	"cuelang.org/go/cue"
