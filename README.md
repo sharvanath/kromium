@@ -51,19 +51,19 @@ Local filesystem: file://folderpath
 ```
 
 ## Execute from source
-go run main.go --run examples/identity_local.json 
+go run main.go --run examples/identity_local.cue 
 
 ## Installation
 ### From source
 go test
 go install
-$GO_BIN/kromium --run /tmp/identity_local.json (e.g. ~/go/bin/kromium --run /tmp/identity_local.json)
+$GO_BIN/kromium --run /tmp/identity_local.cue (e.g. ~/go/bin/kromium --run /tmp/identity_local.cue)
 
 ### Docker
 docker build -t kromium .
 
 Example run:
-docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v /Users/sharva/Workspace/kromium_sync/examples/identity_local.json:/tmp/identity_local.json kromium --run /tmp/identity_local.json
+docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v /Users/sharva/Workspace/kromium_sync/examples/identity_local.cue:/tmp/identity_local.cue kromium --run /tmp/identity_local.cue
 
 ## Future work
 - S3 storage provider. SQL storage provider.
