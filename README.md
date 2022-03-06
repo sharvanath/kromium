@@ -3,19 +3,19 @@
 
 ## What is Kromium?
 
-Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple JSON config. Each transform is independant and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
+Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple CUE[https://cuelang.org/] based configs. Each transform is independant and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
 
 ```
 {
- "SourceBucket": "gs://kromium-src",
- "DestinationBucket": "gs://kromium-dst",
- "StateBucket": "gs://kromium-state",
- "NameSuffix": ".gz",
- "Transforms": [
+ SourceBucket: "gs://kromium-src,
+ DestinationBucket: "gs://kromium-dst",
+ StateBucket: "gs://kromium-state",
+ NameSuffix: ".gz",
+ Transforms: [
    {
-     "name": "GzipCompress",
-     "args": {
-      "level": 10
+     Type: "GzipCompress",
+     Args: {
+       level: 4
      }
    }
  ]
@@ -27,7 +27,7 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 ## Features
 - Resumeable. Kromium checkpoints progress. So in case of any crashes it can be simply restarted.
 - Parallelizable without synchronization. Multiple parallel runs of the Kromium pipeline can be executed independantly to achieve large parallelism. It only relies on the checkpoint state to avoid duplicate work.
-- Transformation. Comes with a few common transformations, and is very easy to add new.
+- Transformations. Comes with a few common transformations, and is very easy to add new.
 
 ## Use cases
 - Copying large amounts of data, e.g. copying large amounts data from one bucket/SQL table to another destination.
@@ -66,7 +66,6 @@ Example run:
 docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v /Users/sharva/Workspace/kromium_sync/examples/identity_local.json:/tmp/identity_local.json kromium --run /tmp/identity_local.json
 
 ## Future work
-- Config validation. Json for pipeline config is great for simplicity but is error prone. The language will be changed to CUE.
 - S3 storage provider. SQL storage provider.
 - Resource optimized. Kromium should employ storage source/sink optimizations to optimize the overall resource usage for the job.
 - By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
