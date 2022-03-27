@@ -3,7 +3,7 @@
 
 ## What is Kromium?
 
-Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple CUE[https://cuelang.org/] based configs. Each transform is independant and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
+Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple CUE[https://cuelang.org/] based configs. Each transform is a stateless function and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
 
 ```
 {
