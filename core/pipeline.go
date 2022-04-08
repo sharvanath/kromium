@@ -17,7 +17,11 @@ import (
 
 var processedCount int32
 
-func updateStatus(text string) {
+func updateStatus(text string, renderUI bool) {
+	if !renderUI {
+		fmt.Print(text + "\n")
+		return
+	}
 	topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
@@ -25,7 +29,11 @@ func updateStatus(text string) {
 	ui.Render(topBox)
 }
 
-func updateWorkerStatus(idx int, text string) {
+func updateWorkerStatus(idx int, text string, renderUI bool) {
+	if !renderUI {
+		fmt.Printf("worker %d: %s\n", idx, text)
+		return
+	}
 	topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
@@ -134,9 +142,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 
 	workerState.setProcessed(start)
 	workerState.workerId = workerId
-	if renderUi {
-		updateStatus(fmt.Sprintf("Done %d/%d", workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8))
-	}
+	updateStatus(fmt.Sprintf("Done %d/%d", workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8), renderUi)
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 
@@ -152,7 +158,7 @@ func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channe
 		}
 		total += count
 		if renderUi {
-			updateWorkerStatus(threadIdx, fmt.Sprintf("[Worker %d] Processed %d objects.", threadIdx, total))
+			updateWorkerStatus(threadIdx, fmt.Sprintf("[Worker %d] Processed %d objects.", threadIdx, total), renderUi)
 		}
 	}
 	atomic.AddInt32(&processedCount, int32(total))
