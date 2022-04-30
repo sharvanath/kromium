@@ -10,7 +10,7 @@ import (
 type StorageProvider interface {
 	// The caller will close.
 	ObjectReader(ctx context.Context, bucket string, object string) (io.ReadCloser, error)
-	// The caller will close.
+	// The caller will close. Exception is that close should also flush any pending data.
 	ObjectWriter(ctx context.Context, bucket string, object string) (io.WriteCloser, error)
 	DeleteObject(ctx context.Context, bucket string, object string) error
 	ListObjects(ctx context.Context, bucket string) ([]string, error)

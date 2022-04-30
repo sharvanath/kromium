@@ -149,11 +149,10 @@ func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
 	for _, f := range w.mergedFiles {
 		go func(file string) {
 			// Ignore errors during delete since the object might be already deleted
-			//f1 := f
 			err = w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
-			/*if err != nil {
-				fmt.Printf("Error in deleting %s %v", f, err)
-			}*/
+			if err != nil {
+				log.Infof("Error in deleting %s %v", f, err)
+			}
 		}(f)
 	}
 	return nil
