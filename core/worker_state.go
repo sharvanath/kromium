@@ -141,18 +141,25 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 }
 
 func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
-	writer, err := w.pipeline.stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
-	if err != nil {
-		return err
-	}
-	w.m.writeTo(writer)
-	writer.Close()
+	c := make(chan error)
+	go func() {
+		writer, err := w.pipeline.stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
+		if err != nil {
+			log.Debugf("Error in Writing %s %v", w.fileName(), err)
+			c <- err
+			return
+		}
+		w.m.writeTo(writer)
+		writer.Close()
+		c <- nil
+	}()
+
 	var wg sync.WaitGroup
 	for _, f := range w.mergedFiles {
 		wg.Add(1)
 		go func(file string) {
 			// Ignore errors during delete since the object might be already deleted
-			err = w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
+			err := w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
 			if err != nil {
 				log.Debugf("Error in deleting %s %v", f, err)
 			}
@@ -160,5 +167,6 @@ func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
 		}(f)
 	}
 	wg.Wait()
-	return nil
+	err:= <- c
+	return err
 }
