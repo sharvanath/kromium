@@ -29,11 +29,7 @@ func updateStatus(text string, renderUI bool) {
 	ui.Render(topBox)
 }
 
-func updateWorkerStatus(idx int, text string, renderUI bool) {
-	if !renderUI {
-		log.Infof("%s\n", text)
-		return
-	}
+func updateWorkerStatus(idx int, text string) {
 	topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
@@ -182,7 +178,9 @@ func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channe
 			break
 		}
 		total += count
-		updateWorkerStatus(threadIdx, fmt.Sprintf("[%s] [%d] Processed %d objects.", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, total), renderUi)
+		if renderUi {
+			updateWorkerStatus(threadIdx, fmt.Sprintf("[%s] [%d] Processed %d objects.", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, total))
+		}
 	}
 	atomic.AddInt32(&processedCount, int32(total))
 	channel <- nil
