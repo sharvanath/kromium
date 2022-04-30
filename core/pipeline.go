@@ -1,8 +1,6 @@
 package core
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	ui "github.com/gizak/termui/v3"
@@ -11,6 +9,8 @@ import (
 	"github.com/sharvanath/kromium/transforms"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"runtime/trace"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -19,7 +19,7 @@ var processedCount int32
 
 func updateStatus(text string, renderUI bool) {
 	if !renderUI {
-		fmt.Print(text + "\n")
+		log.Infof(text + "\n")
 		return
 	}
 	topBox := widgets.NewParagraph()
@@ -29,11 +29,7 @@ func updateStatus(text string, renderUI bool) {
 	ui.Render(topBox)
 }
 
-func updateWorkerStatus(idx int, text string, renderUI bool) {
-	if !renderUI {
-		fmt.Printf("worker %d: %s\n", idx, text)
-		return
-	}
+func updateWorkerStatus(idx int, text string) {
 	topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
@@ -41,8 +37,71 @@ func updateWorkerStatus(idx int, text string, renderUI bool) {
 	ui.Render(topBox)
 }
 
-// Returns the number of files copied.
+func processObjectInPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, object string) error {
+	srcObjectCloser, err := config.sourceStorageProvider.ObjectReader(ctx, config.SourceBucket, object)
+	if err != nil {
+		return err
+	}
+	dstObjectCloser, err := config.destStorageProvider.ObjectWriter(ctx, config.DestinationBucket, object+config.NameSuffix)
+	if err != nil {
+		srcObjectCloser.Close()
+		return err
+	}
+
+	var lastPipeReadEnd io.Reader
+	// A pipeline of transforms, chained. Each stage is connected by a pipe, so the writer end must close otherwise
+	// the read will keep hanging.
+	var pipelineError atomic.Value
+	var wg sync.WaitGroup
+
+	for idx, t := range config.Transforms {
+		var src io.Reader
+		var dst io.WriteCloser
+		transform := transforms.GetTransform(t.Type, t.Args)
+		// Stop building the pipeline. srcObjectCloser.Close() will trigger the close of the full chain.
+		if transform == nil {
+			err = fmt.Errorf("could not find transform %s", t.Type)
+			dstObjectCloser.Close()
+			break
+		}
+
+		if idx == 0 {
+			src = srcObjectCloser
+		} else {
+			src = lastPipeReadEnd
+		}
+
+		if idx == len(config.Transforms)-1 {
+			dst = dstObjectCloser
+		} else {
+			lastPipeReadEnd, dst = io.Pipe()
+		}
+
+		wg.Add(1)
+		go func(dst io.WriteCloser, src io.Reader, t TransformConfig) {
+			log.Debugf("[Worker %d] Apply transform [%2d] %15s.", threadIdx, idx, t)
+			if _, localErr := transform.Transform(dst, src);  localErr != nil {
+				pipelineError.Store(localErr)
+				log.Warnf("[Worker %d] Apply transform [%2d] %15s failed on %s.", threadIdx, idx, t, object)
+			}
+			dst.Close()
+			wg.Done()
+		}(dst, src, t)
+	}
+
+	wg.Wait()
+	if pipelineError.Load() != nil {
+		err = pipelineError.Load().(error)
+		log.Warnf("[Worker %d] Failed during pipeline %s", threadIdx, err)
+	}
+	log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, object + config.NameSuffix, config.DestinationBucket)
+	return err
+}
+
+// Returns the number of files copied, and error if it fails.
 func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, renderUi bool) (int, error) {
+	defer trace.StartRegion(ctx, "RunPipeline").End()
+
 	copied := 0
 	files, err := config.sourceStorageProvider.ListObjects(ctx, config.SourceBucket)
 	if err != nil {
@@ -54,6 +113,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 	}
 
 	workerState, err := ReadMergedState(ctx, config, len(files))
+
 	if err != nil {
 		return copied, err
 	}
@@ -66,83 +126,43 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 
 	workerId := uuid.New().String()
 	log.Debugf("[Worker %d] Starting worker %s with index range %d:%d\n", threadIdx, workerId, start, end)
+	var channels []chan error
 
-	for _, o := range files[start:end] {
-		log.Debugf("[Worker %d] Processing object: %s from bucket: %s\n", threadIdx, o, config.SourceBucket)
-		var buf *bytes.Buffer
+	for _, o1 := range files[start:end] {
+		log.Debugf("[Worker %d] Processing object: %s from bucket: %s\n", threadIdx, o1, config.SourceBucket)
 		var err error
 		var srcCloser io.ReadCloser
 		var dstCloser io.WriteCloser
 
-		for idx, t := range config.Transforms {
-			log.Debugf("[Worker %d] Apply transform [%2d] %15s.", threadIdx, idx, t)
-			if idx != 0 {
-				log.Debugf("[Worker %d] Input for stage [%2d]: %d.", threadIdx, idx, buf.Len())
-			}
-			var src io.Reader
-			var dst io.Writer
-
-			if idx == 0 {
-				srcCloser, err = config.sourceStorageProvider.ObjectReader(ctx, config.SourceBucket, o)
-				if err != nil {
-					srcCloser = nil
-					break
+		channel := make(chan error)
+		channels = append(channels, channel)
+		go func(o string, c chan error) {
+			processObjectInPipeline(ctx, config, threadIdx, o)
+			if err != nil {
+				log.Warnf("[Worker %d] Failed during pipeline %s", threadIdx, err)
+				if srcCloser != nil {
+					srcCloser.Close()
 				}
-				src = srcCloser
-			} else {
-				src = bufio.NewReader(buf)
-			}
-
-			if idx == len(config.Transforms)-1 {
-				dstCloser, err = config.destStorageProvider.ObjectWriter(ctx, config.DestinationBucket, o+config.NameSuffix)
-				if err != nil {
-					dstCloser = nil
-					break
+				if dstCloser != nil {
+					dstCloser.Close()
 				}
-				dst = dstCloser
-			} else {
-				var output bytes.Buffer
-				dst = &output
-				buf = &output
 			}
+			c <- err
+			log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, o+config.NameSuffix, config.DestinationBucket)
+		}(o1, channel)
+	}
 
-			transform := transforms.GetTransform(t.Type, t.Args)
-			if transform == nil {
-				err = fmt.Errorf("Could not find transform %s.", t.Type)
-				break
-			}
-
-			if _, err := transform.Transform(dst, src); err != nil {
-				break
-			}
-
-			if idx != len(config.Transforms)-1 {
-				log.Debugf("[Worker %d] Output for stage [%2d]: %d\n", threadIdx, idx, buf.Len())
-			} else {
-				log.Debugf("\n")
-			}
-
-			srcCloser.Close()
-			dstCloser.Close()
-		}
-
-		if err != nil {
-			log.Warnf("[Worker %d] Failed during pipeline %s", threadIdx, err)
-			if srcCloser != nil {
-				srcCloser.Close()
-			}
-			if dstCloser != nil {
-				dstCloser.Close()
-			}
-			return copied, err
+	for _, c := range channels {
+		e := <- c
+		if e != nil {
+			return copied, e
 		}
 		copied += 1
-		log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, o+config.NameSuffix, config.DestinationBucket)
 	}
 
 	workerState.setProcessed(start)
 	workerState.workerId = workerId
-	updateStatus(fmt.Sprintf("Done %d/%d", workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8), renderUi)
+	updateStatus(fmt.Sprintf("[%s] [%d] Done %d/%d", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8), renderUi)
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 
@@ -152,13 +172,14 @@ func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channe
 		count, err := RunPipeline(ctx, config, threadIdx, renderUi)
 		if err != nil {
 			channel <- err
+			break
 		}
 		if count <= 0 {
 			break
 		}
 		total += count
 		if renderUi {
-			updateWorkerStatus(threadIdx, fmt.Sprintf("[Worker %d] Processed %d objects.", threadIdx, total), renderUi)
+			updateWorkerStatus(threadIdx, fmt.Sprintf("[%s] [%d] Processed %d objects.", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, total))
 		}
 	}
 	atomic.AddInt32(&processedCount, int32(total))

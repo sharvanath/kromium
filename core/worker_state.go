@@ -7,10 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
+	"sync"
 )
 
 // The batch size
-const cBatchSize = 5
+const cBatchSize = 16
 
 // Only the byte slice is serialized to the state file. workerId is used for the state file name.
 type WorkerState struct {
@@ -69,6 +70,10 @@ func (w *WorkerState) setProcessed(startOff int) {
 	w.m.set(batchIdx)
 }
 
+type WorkerStateResp struct {
+	w *WorkerState
+	e error
+}
 func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int) (*WorkerState, error) {
 	files, err := pipeline.stateStorageProvider.ListObjects(ctx, pipeline.StateBucket)
 	if err != nil {
@@ -77,53 +82,91 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 
 	w := createState(pipeline, numFiles)
 
+	var channels []chan WorkerStateResp
 	for _, f := range files {
-		if !strings.HasPrefix(f, pipeline.getHash()) {
-			log.Warnf("Ignoring state file %s not matching transform hash %s", f, pipeline.getHash())
+		channel := make(chan WorkerStateResp)
+		channels = append(channels, channel)
+		go func(file string) {
+			var w WorkerStateResp
+			if !strings.HasPrefix(file, pipeline.getHash()) {
+				log.Warnf("Ignoring state file %s not matching transform hash %s", file, pipeline.getHash())
+				channel <- w
+				return
+			}
+			reader, err := pipeline.stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, file)
+			// The file could be deleted by the time we get to it.
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				w.e = err
+				channel <- w
+				return
+			}
+
+			if err == nil {
+				var currState WorkerState
+				currState.pipeline = pipeline
+				m, err := readFrom(reader)
+				reader.Close()
+				if err != nil {
+					// ignore errors since these could happen due to concurrent deletes
+					// worst case this leads to duplicate work
+					log.Infof("Could not decode worker file %s %s", f, err)
+					w.e = err
+					channel <- w
+					return
+				}
+				w.w = &currState
+				currState.m = m
+			}
+			channel <- w
+			return
+		}(f)
+	}
+
+	for i, c := range channels {
+		stateResp := <- c
+		if stateResp.e != nil {
 			continue
 		}
-		reader, err := pipeline.stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, f)
-		// The file could be deleted by the time we get to it.
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return nil, err
+		err = w.mergeState(*stateResp.w)
+		if err != nil {
+			// ignore errors since these could happen due to concurrent deletes
+			// worst case this leads to duplicate work
+			log.Infof("Could not decode worker file %s %s", files[i], err)
+			continue
 		}
-
-		if err == nil {
-			var currState WorkerState
-			currState.pipeline = pipeline
-			m, err := readFrom(reader)
-			reader.Close()
-			if err != nil {
-				// ignore errors since these could happen due to concurrent deletes
-				// worst case this leads to duplicate work
-				log.Infof("Could not decode worker file %s %s", f, err)
-				continue
-			}
-			currState.m = m
-			err = w.mergeState(currState)
-			if err != nil {
-				// ignore errors since these could happen due to concurrent deletes
-				// worst case this leads to duplicate work
-				log.Infof("Could not decode worker file %s %s", f, err)
-				continue
-			}
-		}
-		w.mergedFiles = append(w.mergedFiles, f)
+		w.mergedFiles = append(w.mergedFiles, files[i])
 	}
 
 	return w, nil
 }
 
 func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
-	writer, err := w.pipeline.stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
-	if err != nil {
-		return err
-	}
-	w.m.writeTo(writer)
-	writer.Close()
+	c := make(chan error)
+	go func() {
+		writer, err := w.pipeline.stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
+		if err != nil {
+			log.Debugf("Error in Writing %s %v", w.fileName(), err)
+			c <- err
+			return
+		}
+		w.m.writeTo(writer)
+		writer.Close()
+		c <- nil
+	}()
+
+	var wg sync.WaitGroup
 	for _, f := range w.mergedFiles {
-		// Ignore errors during delete since the object might be already deleted
-		w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, f)
+		wg.Add(1)
+		go func(file string) {
+			// Ignore errors during delete since the object might be already deleted
+			err := w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
+			if err != nil {
+				log.Debugf("Error in deleting %s %v", f, err)
+			}
+			wg.Done()
+		}(f)
 	}
-	return nil
+	wg.Wait()
+	err:= <- c
+	return err
 }

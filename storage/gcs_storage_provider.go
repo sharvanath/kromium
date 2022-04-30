@@ -52,9 +52,11 @@ func (g GcsStorageProvider) ObjectReader(ctx context.Context, bucket string, obj
 }
 
 func (g GcsStorageProvider) ObjectWriter(ctx context.Context, bucket string, object string) (io.WriteCloser, error) {
+	//fmt.Printf("Creating %s/%s\n", bucket, object)
 	return g.client.Bucket(getBucketName(bucket)).Object(object).NewWriter(ctx), nil
 }
 
 func (g GcsStorageProvider) DeleteObject(ctx context.Context, bucket string, object string) error {
+	//fmt.Printf("Deleting %s/%s\n", bucket, object)
 	return g.client.Bucket(getBucketName(bucket)).Object(object).Delete(ctx)
 }

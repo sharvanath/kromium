@@ -1,6 +1,6 @@
 {
- SourceBucket: "gs://test-kromium1",
- DestinationBucket: "gs://test-kromium2",
+ SourceBucket: "gs://test-kromium3",
+ DestinationBucket: "gs://test-kromium4",
  StateBucket: "gs://kromium-state",
  Transforms: [
    {
