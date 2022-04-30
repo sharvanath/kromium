@@ -1,8 +1,6 @@
 package core
 
 import (
-	"sync"
-	"sync/atomic"
 	"context"
 	"fmt"
 	ui "github.com/gizak/termui/v3"
@@ -12,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"runtime/trace"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 

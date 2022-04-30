@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
+	"sync"
 )
 
 // The batch size
@@ -146,14 +147,18 @@ func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
 	}
 	w.m.writeTo(writer)
 	writer.Close()
+	var wg sync.WaitGroup
 	for _, f := range w.mergedFiles {
+		wg.Add(1)
 		go func(file string) {
 			// Ignore errors during delete since the object might be already deleted
 			err = w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
 			if err != nil {
 				log.Infof("Error in deleting %s %v", f, err)
 			}
+			wg.Done()
 		}(f)
 	}
+	wg.Wait()
 	return nil
 }
