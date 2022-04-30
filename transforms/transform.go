@@ -19,11 +19,11 @@ func GetTransform(name string, args interface{}) Transform {
 		return GzipCompressTransform{args.(map[string]interface{})}
 	case "GzipDecompress":
 		return GzipDecompressTransform{}
-	case "SedTransform":
+	case "Sed":
 		return SedTransform{args.(string)}
-	case "DecryptionTransform":
+	case "Decrypt":
 		return NewDecryptionTransform(args.(map[string]interface{}))
-	case "EncryptionTransform":
+	case "Encrypt":
 		return NewEncryptionTransform(args.(map[string]interface{}))
 	}
 	return nil

@@ -143,7 +143,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 		channel := make(chan error)
 		channels = append(channels, channel)
 		go func(o string, c chan error) {
-			processObjectInPipeline(ctx, config, threadIdx, o)
+			err = processObjectInPipeline(ctx, config, threadIdx, o)
 			if err != nil {
 				log.Warnf("[Worker %d] Failed during pipeline %s", threadIdx, err)
 				if srcCloser != nil {

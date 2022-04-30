@@ -5,7 +5,7 @@
   NameSuffix: "_1",
   Transforms: [
     {
-      Type: "Decrypt",
+      Type: "Encrypt",
       Args: {
         HexKey: "6368616e676520746869732070617373"
       }

@@ -1,8 +1,8 @@
 {
- SourceBucket: "file:///tmp/src",
- DestinationBucket: "file:///tmp/dst",
+ SourceBucket: "file:///tmp/dst",
+ DestinationBucket: "file:///tmp/src",
  StateBucket: "file:///tmp/state",
- NameSuffix: "_1",
+ StripSuffix: "_1",
  Transforms: [
    {
      Type: "Decrypt",
