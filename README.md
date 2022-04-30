@@ -53,6 +53,11 @@ Local filesystem: file://folderpath
 ## Execute from source
 go run main.go --run examples/identity_local.cue 
 
+## Profiling
+go run main.go --run examples/identity_local.cue 
+http://localhost:6060/debug/pprof/trace?seconds=120
+go tool trace <file_name>
+
 ## Installation
 ### From source
 go test
