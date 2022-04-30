@@ -64,7 +64,7 @@ func (e EncryptionTransform) Transform(dst io.Writer, src io.Reader) (interface{
 	if _, err := io.Copy(writer, src); err != nil {
 		panic(err)
 	}
-
+	writer.Close()
 	return nil, err
 }
 

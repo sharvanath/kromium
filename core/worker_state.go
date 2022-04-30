@@ -90,6 +90,7 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 			var w WorkerStateResp
 			if !strings.HasPrefix(file, pipeline.getHash()) {
 				log.Warnf("Ignoring state file %s not matching transform hash %s", file, pipeline.getHash())
+				w.e = fmt.Errorf("ignoring state file %s", file)
 				channel <- w
 				return
 			}
@@ -126,6 +127,9 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 		stateResp := <- c
 		if stateResp.e != nil {
 			continue
+		}
+		if stateResp.w == nil {
+			log.Infof("Could")
 		}
 		err = w.mergeState(*stateResp.w)
 		if err != nil {

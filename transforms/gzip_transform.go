@@ -16,7 +16,7 @@ func (i GzipCompressTransform) Transform(dst io.Writer, src io.Reader) (interfac
 	var compressWriter io.WriteCloser
 	var err error
 	if _, ok := i.args["level"]; ok {
-		compressWriter, err = gzip.NewWriterLevel(dst, int(i.args["level"].(float64)))
+		compressWriter, err = gzip.NewWriterLevel(dst, i.args["level"].(int))
 		if err != nil {
 			return nil, err
 		}

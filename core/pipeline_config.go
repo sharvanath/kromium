@@ -16,6 +16,7 @@ type PipelineConfig struct {
 	DestinationBucket string
 	StateBucket       string
 	NameSuffix        string
+	StripSuffix       string
 	Transforms        []TransformConfig
 
 	// Derived fields

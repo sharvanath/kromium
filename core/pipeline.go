@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"runtime/trace"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,12 +38,17 @@ func updateWorkerStatus(idx int, text string) {
 	ui.Render(topBox)
 }
 
+func getObjectName(object string, nameSuffix string, stripSuffix string) string {
+	return strings.TrimSuffix(object, stripSuffix) + nameSuffix
+}
+
 func processObjectInPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, object string) error {
 	srcObjectCloser, err := config.sourceStorageProvider.ObjectReader(ctx, config.SourceBucket, object)
 	if err != nil {
 		return err
 	}
-	dstObjectCloser, err := config.destStorageProvider.ObjectWriter(ctx, config.DestinationBucket, object+config.NameSuffix)
+	dstObjectName := getObjectName(object, config.NameSuffix, config.StripSuffix)
+	dstObjectCloser, err := config.destStorageProvider.ObjectWriter(ctx, config.DestinationBucket, dstObjectName)
 	if err != nil {
 		srcObjectCloser.Close()
 		return err
@@ -94,7 +100,7 @@ func processObjectInPipeline(ctx context.Context, config *PipelineConfig, thread
 		err = pipelineError.Load().(error)
 		log.Warnf("[Worker %d] Failed during pipeline %s", threadIdx, err)
 	}
-	log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, object + config.NameSuffix, config.DestinationBucket)
+	log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, dstObjectName, config.DestinationBucket)
 	return err
 }
 
@@ -148,7 +154,6 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 				}
 			}
 			c <- err
-			log.Debugf("[Worker %d] Wrote object: %s to bucket: %s\n", threadIdx, o+config.NameSuffix, config.DestinationBucket)
 		}(o1, channel)
 	}
 
