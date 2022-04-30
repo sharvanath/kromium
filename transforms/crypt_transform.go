@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -33,9 +32,6 @@ func NewEncryptionTransform(args map[string]interface{}) (*EncryptionTransform) 
 	if err := parseArgs(args, &e); err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("Key = %s\n", e.HexKey)
-
 	return &e
 }
 
@@ -61,10 +57,10 @@ func (e EncryptionTransform) Transform(dst io.Writer, src io.Reader) (interface{
 	stream := cipher.NewOFB(block, iv[:])
 	writer := &cipher.StreamWriter{S: stream, W: dst}
 	// Copy the input to the output buffer, encrypting as we go.
-	if _, err := io.Copy(writer, src); err != nil {
+	if _, err = io.Copy(writer, src); err != nil {
 		panic(err)
 	}
-
+	writer.Close()
 	return nil, err
 }
 

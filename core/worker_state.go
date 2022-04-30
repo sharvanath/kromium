@@ -90,12 +90,16 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 			var w WorkerStateResp
 			if !strings.HasPrefix(file, pipeline.getHash()) {
 				log.Warnf("Ignoring state file %s not matching transform hash %s", file, pipeline.getHash())
+				w.e = fmt.Errorf("ignoring state file %s", file)
 				channel <- w
 				return
 			}
 			reader, err := pipeline.stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, file)
 			// The file could be deleted by the time we get to it.
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
+			if err != nil {
+				if !errors.Is(err, os.ErrNotExist) {
+					log.Errorf("error reading state file %s, %s", file, err)
+				}
 				w.e = err
 				channel <- w
 				return
@@ -127,11 +131,13 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 		if stateResp.e != nil {
 			continue
 		}
+		if stateResp.w == nil {
+			panic("Unexpected null worker state")
+		}
 		err = w.mergeState(*stateResp.w)
 		if err != nil {
-			// ignore errors since these could happen due to concurrent deletes
-			// worst case this leads to duplicate work
-			log.Infof("Could not decode worker file %s %s", files[i], err)
+			// Ignore corrupt state files
+			log.Errorf("corrupt state file %s %s", files[i], err)
 			continue
 		}
 		w.mergedFiles = append(w.mergedFiles, files[i])

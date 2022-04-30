@@ -55,6 +55,7 @@ var schema = `#BaseTransform: {
  DestinationBucket: #Bucket,
  StateBucket: #Bucket,
  NameSuffix?: string,
+ StripSuffix?: string,
  Transforms: [...#Transform]
 }`
 

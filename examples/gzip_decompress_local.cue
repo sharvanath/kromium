@@ -2,13 +2,10 @@
  SourceBucket: "file:///tmp/dst",
  DestinationBucket: "file:///tmp/src",
  StateBucket: "file:///tmp/state",
- StripSuffix: "_1",
+ StripSuffix: ".gz",
  Transforms: [
    {
-     Type: "Decrypt",
-     Args: {
-        HexKey: "6368616e676520746869732070617373"
-     }
+     Type: "GzipDecompress",
    }
  ]
 }
