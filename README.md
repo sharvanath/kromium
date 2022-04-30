@@ -54,15 +54,15 @@ Local filesystem: file://folderpath
 go run main.go --run examples/identity_local.cue 
 
 ## Profiling
-go run main.go --run examples/identity_local.cue 
-http://localhost:6060/debug/pprof/trace?seconds=120
-go tool trace <file_name>
+* go run main.go --run examples/identity_local.cue 
+* http://localhost:6060/debug/pprof/trace?seconds=120
+* go tool trace <file_name>
 
 ## Installation
 ### From source
-go test
-go install
-$GO_BIN/kromium --run /tmp/identity_local.cue (e.g. ~/go/bin/kromium --run /tmp/identity_local.cue)
+* go test
+* go install
+* $GO_BIN/kromium --run /tmp/identity_local.cue (e.g. ~/go/bin/kromium --run /tmp/identity_local.cue)
 
 ### Docker
 docker build -t kromium .
