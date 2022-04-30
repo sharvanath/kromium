@@ -154,7 +154,7 @@ func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
 			// Ignore errors during delete since the object might be already deleted
 			err = w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
 			if err != nil {
-				log.Infof("Error in deleting %s %v", f, err)
+				log.Debugf("Error in deleting %s %v", f, err)
 			}
 			wg.Done()
 		}(f)
