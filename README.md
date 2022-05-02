@@ -3,7 +3,7 @@
 
 ## What is Kromium?
 
-Kromium is a no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple CUE[https://cuelang.org/] based configs. Each transform is a stateless function and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
+Kromium is an efficient no-code bulk file copy/transformation tool. The pipeline is a linear chain of transformations and is expressed using simple CUE[https://cuelang.org/] based configs. Each transform is a stateless function and every run of the pipeline is idempotent. Kromium is designed for simplicity and ease of use. A simple configuration example is the following:
 
 ```
 {
@@ -26,6 +26,7 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 
 ## Features
 - Resumeable. Kromium checkpoints progress. So in case of any crashes it can be simply restarted.
+- Efficient. Kromium uses efficient go concurrency constructs to run fast and in parallel. It can easily processes up to 100 cloud storage objects/second on a simple macbook pro. Local files processing can be much faster.
 - Parallelizable without synchronization. Multiple parallel runs of the Kromium pipeline can be executed independantly to achieve large parallelism. It only relies on the checkpoint state to avoid duplicate work.
 - Transformations. Comes with a few common transformations, and is very easy to add new.
 
@@ -72,6 +73,6 @@ docker run -v /tmp/src:/tmp/src -v /tmp/dst:/tmp/dst -v /tmp/state:/tmp/state -v
 
 ## Future work
 - S3 storage provider. SQL storage provider.
-- Resource optimized. Kromium should employ storage source/sink optimizations to optimize the overall resource usage for the job. GCS (https://cloud.google.com/storage/docs/request-rate)
+- Storage optimized. Kromium should employ storage source/sink optimizations to optimize the overall resource usage for the job. GCS (https://cloud.google.com/storage/docs/request-rate)
 - By default the transformation runs on the local machine. Support for Kubernetes will be added soon.
 - Add SQL/CSV transforms to support simple ETL pipelines, e.g. Load CSVs from a bucket to SQL.
