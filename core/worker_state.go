@@ -2,10 +2,8 @@ package core
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"os"
 	"strings"
 	"sync"
 )
@@ -97,9 +95,6 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 			reader, err := pipeline.stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, file)
 			// The file could be deleted by the time we get to it.
 			if err != nil {
-				if !errors.Is(err, os.ErrNotExist) {
-					log.Errorf("error reading state file %s, %s", file, err)
-				}
 				w.e = err
 				channel <- w
 				return
