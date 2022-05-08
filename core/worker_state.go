@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"github.com/sharvanath/kromium/storage"
 	log "github.com/sirupsen/logrus"
 	"strings"
 	"sync"
@@ -73,7 +74,7 @@ type WorkerStateResp struct {
 	e error
 }
 func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int) (*WorkerState, error) {
-	files, err := pipeline.stateStorageProvider.ListObjects(ctx, pipeline.StateBucket)
+	files, err := storage.ListObjects(ctx, pipeline.stateStorageProvider, pipeline.StateBucket)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 				channel <- w
 				return
 			}
-			reader, err := pipeline.stateStorageProvider.ObjectReader(ctx, pipeline.StateBucket, file)
+			reader, err := storage.GetObjectReader(ctx, pipeline.stateStorageProvider, pipeline.StateBucket, file)
 			// The file could be deleted by the time we get to it.
 			if err != nil {
 				w.e = err
@@ -144,7 +145,7 @@ func ReadMergedState(ctx context.Context, pipeline *PipelineConfig, numFiles int
 func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
 	c := make(chan error)
 	go func() {
-		writer, err := w.pipeline.stateStorageProvider.ObjectWriter(ctx, stateBucket, w.fileName())
+		writer, err := storage.GetObjectWriter(ctx, w.pipeline.stateStorageProvider, stateBucket, w.fileName())
 		if err != nil {
 			log.Debugf("Error in Writing %s %v", w.fileName(), err)
 			c <- err
@@ -160,7 +161,7 @@ func WriteState(ctx context.Context, stateBucket string, w *WorkerState) error {
 		wg.Add(1)
 		go func(file string) {
 			// Ignore errors during delete since the object might be already deleted
-			err := w.pipeline.stateStorageProvider.DeleteObject(ctx, stateBucket, file)
+			err := storage.DeleteObject(ctx, w.pipeline.stateStorageProvider, stateBucket, file)
 			if err != nil {
 				log.Debugf("Error in deleting %s %v", f, err)
 			}

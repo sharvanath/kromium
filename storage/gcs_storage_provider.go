@@ -58,3 +58,7 @@ func (g GcsStorageProvider) ObjectWriter(ctx context.Context, bucket string, obj
 func (g GcsStorageProvider) DeleteObject(ctx context.Context, bucket string, object string) error {
 	return g.client.Bucket(getBucketName(bucket)).Object(object).Delete(ctx)
 }
+
+func (g GcsStorageProvider) GetBucketName(ctx context.Context, bucketFullName string) (string, error) {
+	return strings.TrimPrefix(bucketFullName, "gs://"), nil
+}

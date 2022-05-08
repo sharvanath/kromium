@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"io"
 	"io/ioutil"
+	"strings"
 )
 
 const DEFAULT_FILE_BUF_SIZE_BYTES int = 10*1024
@@ -19,9 +20,11 @@ type S3StorageProvider struct {
 	session *session.Session
 }
 
-func newS3StorageProvide() (StorageProvider, error) {
+func newS3StorageProvider(region string) (StorageProvider, error) {
 	// The session the S3 Downloader will use
-	session := session.Must(session.NewSession())
+	session := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(region)},
+	))
 	return &S3StorageProvider{session: session}, nil
 }
 
@@ -30,14 +33,14 @@ func (s S3StorageProvider) ObjectReader(ctx context.Context, bucket string, obje
 	// Create a downloader with the session and default options
 	downloader := s3manager.NewDownloader(s.session)
 	w := aws.NewWriteAtBuffer(make([]byte, DEFAULT_FILE_BUF_SIZE_BYTES))
-	_, err := downloader.Download(w, &s3.GetObjectInput{
+	size, err := downloader.Download(w, &s3.GetObjectInput{
 		Bucket: &bucket,
 		Key: &object,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file, %v", err)
 	}
-	return ioutil.NopCloser(bytes.NewReader(w.Bytes())), nil
+	return ioutil.NopCloser(bytes.NewReader(w.Bytes()[:size])), nil
 }
 
 func (s S3StorageProvider) Close() error {
@@ -46,12 +49,11 @@ func (s S3StorageProvider) Close() error {
 
 type S3ObjectWriter struct {
 	b bytes.Buffer
-	w io.Writer
 	s *S3StorageProvider
 	bucket, object string
 }
 
-func (o S3ObjectWriter) Close() error {
+func (o *S3ObjectWriter) Close() error {
 	uploader := s3manager.NewUploader(o.s.session)
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: &o.bucket,
@@ -64,13 +66,13 @@ func (o S3ObjectWriter) Close() error {
 	return nil
 }
 
-func (o S3ObjectWriter) Write(p []byte) (n int, err error) {
-	return o.w.Write(p)
+func (o *S3ObjectWriter) Write(p []byte) (n int, err error) {
+	return o.b.Write(p)
 }
 
 func (s S3StorageProvider) ObjectWriter(ctx context.Context, bucket string, object string) (io.WriteCloser, error) {
 	var o S3ObjectWriter
-	o.w = bufio.NewWriter(&o.b)
+	o.s = &s
 	o.bucket = bucket
 	o.object = object
 	return &o, nil
@@ -92,6 +94,7 @@ func (s S3StorageProvider) ListObjects(ctx context.Context, bucket string) ([]st
 	svc := s3.New(s.session)
 	resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket})
 	if err != nil {
+		fmt.Printf("he | %s | %s\n", bucket, err)
 		return nil, err
 	}
 
@@ -100,4 +103,8 @@ func (s S3StorageProvider) ListObjects(ctx context.Context, bucket string) ([]st
 		objects = append(objects, *f.Key)
 	}
 	return objects, nil
+}
+
+func (s S3StorageProvider) GetBucketName(ctx context.Context, bucketFullName string) (string, error) {
+	return strings.TrimPrefix(bucketFullName, "s3://"), nil
 }
