@@ -1,5 +1,5 @@
 # Kromium
-**Kromium is currently in development and has no release. Feel free to play with it at your own risk.**
+**Kromium is currently in development and has no release.**
 
 ## What is Kromium?
 
@@ -38,8 +38,8 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 Different storage providers can be used as source, destination, and state. The state bucket is used for storing the state of the run.
 As of now, Kromium only supports GCS and Local filesystem for storage. The support for SQL and Azure will be added soon. The source bucket is a uri which should be fully qualified. Following are the prefixes for supported storage solution:
 ```
-GCS: gs://bucket
 Local filesystem: file://folderpath
+GCS: gs://bucket
 s3: s3://bucket
 ```
 
