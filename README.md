@@ -22,7 +22,7 @@ Kromium is an efficient no-code bulk file copy/transformation tool. The pipeline
 }
 ```
 
-This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The checkpointing state will be written to `kromium-state`. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions.
+This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The checkpointing state will be written to `kromium-state`. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions. More examples in https://github.com/sharvanath/kromium/tree/main/examples
 
 ## Features
 - Resumeable. Kromium checkpoints progress. So in case of any crashes it can be simply restarted.
@@ -35,11 +35,15 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 - ETL workloads, Reading bulk data, Transforming it and writing back to some other location.
 
 ## Storage providers
-As of now, Kromium only supports GCS and Local filesystem for storage. The support for S3 (and Azure) will be added soon. The source bucket is a uri which should be fully qualified. Following are the prefixes for supported storage solution:
+Different storage providers can be used as source, destination, and state. The state bucket is used for storing the state of the run.
+As of now, Kromium only supports GCS and Local filesystem for storage. The support for SQL and Azure will be added soon. The source bucket is a uri which should be fully qualified. Following are the prefixes for supported storage solution:
 ```
 GCS: gs://bucket
 Local filesystem: file://folderpath
+s3: s3://bucket
 ```
+
+More details on how to configure auth for storage provider https://github.com/sharvanath/kromium/tree/main/storage.
 
 ## Supported transforms
 **Generic file transforms**
