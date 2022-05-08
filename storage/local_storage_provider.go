@@ -50,3 +50,7 @@ func (g LocalStorageProvider) DeleteObject(ctx context.Context, bucket string, o
 func (g LocalStorageProvider) Close() error {
 	return nil
 }
+
+func (g LocalStorageProvider) GetBucketName(ctx context.Context, bucketFullName string) (string, error) {
+	return strings.TrimPrefix(bucketFullName, "file://"), nil
+}

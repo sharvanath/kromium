@@ -18,6 +18,7 @@ type PipelineConfig struct {
 	NameSuffix        string
 	StripSuffix       string
 	Transforms        []TransformConfig
+	StorageConfig     storage.StorageConfig
 
 	// Derived fields
 	Hash              string
@@ -34,19 +35,19 @@ func (p *PipelineConfig) getHash() string {
 }
 
 func (p *PipelineConfig) Init(ctx context.Context) error {
-	inputStorageProvider, err := storage.GetStorageProvider(ctx, p.SourceBucket)
+	inputStorageProvider, err := storage.GetStorageProvider(ctx, p.SourceBucket, &p.StorageConfig)
 	if err != nil {
 		return err
 	}
 	p.sourceStorageProvider = inputStorageProvider
 
-	outputStorageProvider, err := storage.GetStorageProvider(ctx, p.DestinationBucket)
+	outputStorageProvider, err := storage.GetStorageProvider(ctx, p.DestinationBucket, &p.StorageConfig)
 	if err != nil {
 		return err
 	}
 	p.destStorageProvider = outputStorageProvider
 
-	stateStorageProvider, err := storage.GetStorageProvider(ctx, p.StateBucket)
+	stateStorageProvider, err := storage.GetStorageProvider(ctx, p.StateBucket, &p.StorageConfig)
 	if err != nil {
 		return err
 	}

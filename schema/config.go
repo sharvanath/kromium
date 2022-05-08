@@ -50,6 +50,14 @@ var schema = `#BaseTransform: {
 
 #Bucket: string & (=~"file:///" | =~"gs://" | =~"s3://")
 
+#S3Config: {
+   Region?: string
+}
+
+#StorageConfig: {
+   S3Config?: #S3Config
+}
+
 #Pipeline: {
  SourceBucket: #Bucket,
  DestinationBucket: #Bucket,
@@ -57,6 +65,7 @@ var schema = `#BaseTransform: {
  NameSuffix?: string,
  StripSuffix?: string,
  Transforms: [...#Transform]
+ StorageConfig?: #StorageConfig
 }`
 
 func validatePipelineConfigString(config string) error {

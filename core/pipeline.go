@@ -6,6 +6,7 @@ import (
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/google/uuid"
+	"github.com/sharvanath/kromium/storage"
 	"github.com/sharvanath/kromium/transforms"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -43,12 +44,12 @@ func getObjectName(object string, nameSuffix string, stripSuffix string) string 
 }
 
 func processObjectInPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, object string) error {
-	srcObjectCloser, err := config.sourceStorageProvider.ObjectReader(ctx, config.SourceBucket, object)
+	srcObjectCloser, err := storage.GetObjectReader(ctx, config.sourceStorageProvider, config.SourceBucket, object)
 	if err != nil {
 		return err
 	}
 	dstObjectName := getObjectName(object, config.NameSuffix, config.StripSuffix)
-	dstObjectCloser, err := config.destStorageProvider.ObjectWriter(ctx, config.DestinationBucket, dstObjectName)
+	dstObjectCloser, err := storage.GetObjectWriter(ctx, config.destStorageProvider, config.DestinationBucket, dstObjectName)
 	if err != nil {
 		srcObjectCloser.Close()
 		return err
@@ -109,7 +110,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 	defer trace.StartRegion(ctx, "RunPipeline").End()
 
 	copied := 0
-	files, err := config.sourceStorageProvider.ListObjects(ctx, config.SourceBucket)
+	files, err := storage.ListObjects(ctx, config.sourceStorageProvider, config.SourceBucket)
 	if err != nil {
 		return copied, err
 	}
