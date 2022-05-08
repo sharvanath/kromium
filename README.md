@@ -22,13 +22,13 @@ Kromium is an efficient no-code bulk file copy/transformation tool. The pipeline
 }
 ```
 
-This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The checkpointing state will be written to `kromium-state`. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions. More examples in https://github.com/sharvanath/kromium/tree/main/examples
+This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The checkpointing state will be written to `kromium-state`. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions. More examples can be found in https://github.com/sharvanath/kromium/tree/main/examples.
 
 ## Features
 - Resumeable. Kromium checkpoints progress. So in case of any crashes it can be simply restarted.
 - Efficient. Kromium uses efficient go concurrency constructs to run fast and in parallel. It can easily processes up to 100 cloud storage objects/second on a simple macbook pro. Local files processing can be much faster.
 - Parallelizable without synchronization. Multiple parallel runs of the Kromium pipeline can be executed independantly to achieve large parallelism. It only relies on the checkpoint state to avoid duplicate work.
-- Transformations. Comes with a few common transformations, and is very easy to add new.
+- Transformations. Comes with a few common transformations, and it is very easy to a add new one.
 
 ## Use cases
 - Copying large amounts of data, e.g. copying large amounts data from one bucket/SQL table to another destination.
