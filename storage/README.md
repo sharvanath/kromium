@@ -10,7 +10,7 @@ The format for GCS buckets is `gs://bucket_name`.
 ## S3
 
 The format for GCS buckets is `s3://bucket_name`.
-For auth the [~/.s3/config file](https://cloud.google.com/docs/authentication/production#automatically) and the [~/.s3/credentials](https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#creating-the-credentials-file) must be set.
+For auth the [~/.s3/config file](https://cloud.google.com/docs/authentication/production#automatically) and the [~/.s3/credentials](https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#creating-the-credentials-file) must be set. For the bucket regions the pipeline config must be also contain the region info, check out https://github.com/sharvanath/kromium/blob/main/examples/identity_s3.cue for example.
 
 ## Local
 The format for local filesystem buckets (folders) is `file://folder`.
