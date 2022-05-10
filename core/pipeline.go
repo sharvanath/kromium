@@ -19,24 +19,33 @@ import (
 
 var processedCount int32
 
-func updateStatus(text string, renderUI bool) {
+func updateStatus(percent int, message string, renderUI bool) {
 	if !renderUI {
-		log.Infof(text + "\n")
 		return
 	}
-	topBox := widgets.NewParagraph()
-	topBox.Text = text
-	topBox.TextStyle.Fg = 0
-	topBox.SetRect(0, 0, 45,  3)
-	ui.Render(topBox)
+
+	p := widgets.NewParagraph()
+	p.Text = message
+	p.TextStyle.Fg = ui.ColorBlack
+	p.SetRect(0, 3, 100, 6)
+	ui.Render(p)
+
+	g0 := widgets.NewGauge()
+	g0.Title = "Progress"
+	g0.SetRect(0, 6, 100, 11)
+	g0.Percent = percent
+	g0.BarColor = ui.ColorRed
+	g0.BorderStyle.Fg = ui.ColorWhite
+	g0.TitleStyle.Fg = ui.ColorCyan
+	ui.Render(g0)
 }
 
 func updateWorkerStatus(idx int, text string) {
-	topBox := widgets.NewParagraph()
+	/*topBox := widgets.NewParagraph()
 	topBox.Text = text
 	topBox.TextStyle.Fg = 0
 	topBox.SetRect(0, idx * 3 + 3, 45,  idx * 3 + 6)
-	ui.Render(topBox)
+	ui.Render(topBox)*/
 }
 
 func getObjectName(object string, nameSuffix string, stripSuffix string) string {
@@ -168,7 +177,13 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 
 	workerState.setProcessed(start)
 	workerState.workerId = workerId
-	updateStatus(fmt.Sprintf("[%s] [%d] Done %d/%d", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, workerState.m.usedSize() * cBatchSize, len(workerState.m.slice) * cBatchSize * 8), renderUi)
+
+	numProcessed := workerState.m.usedSize()*cBatchSize
+	numTotal := len(workerState.m.slice)*cBatchSize*8
+	if !renderUi {
+		log.Infof("[%s] [%d] Done %d/%d", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, numProcessed, numTotal)
+	}
+	updateStatus((numProcessed*100)/numTotal, fmt.Sprintf("Processed %d/%d", numProcessed, numTotal), renderUi)
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 
@@ -193,10 +208,18 @@ func runPipelineLoopInternal(ctx context.Context, config *PipelineConfig, channe
 }
 
 func RunPipelineLoop(ctx context.Context, config *PipelineConfig, parallelism int, renderUi bool) error {
+
 	if renderUi {
 		if err := ui.Init(); err != nil {
 			log.Fatalf("failed to initialize termui: %v", err)
 		}
+
+		p := widgets.NewParagraph()
+		p.Title = "Kromium run (https://kromium.io)"
+		p.Text = fmt.Sprintf("Press any key to exit. Simply restart to resume. Using %d workers", parallelism)
+		p.TextStyle.Fg = ui.ColorBlack
+		p.SetRect(0, 0, 100, 3)
+		ui.Render(p)
 	}
 
 	if parallelism <= 0 {
@@ -214,9 +237,6 @@ func RunPipelineLoop(ctx context.Context, config *PipelineConfig, parallelism in
 	for _, channel := range channels {
 		e := <-channel
 		if e != nil {
-			if renderUi {
-				ui.Close()
-			}
 			return e
 		}
 	}

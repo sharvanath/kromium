@@ -4,20 +4,22 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/sharvanath/kromium/schema"
+	ui "github.com/gizak/termui/v3"
 	"github.com/sharvanath/kromium/core"
+	"github.com/sharvanath/kromium/schema"
 	"net/http"
-	"os"
 	_ "net/http/pprof"
+	"os"
+	"runtime"
 )
 
-const version = "0.1.0"
+const version = "0.1.5"
 
 func main() {
 	printVersion := flag.Bool("version", false, "Print version")
 	runConfig := flag.String("run", "", "Run the schema")
 	validate := flag.String("validate", "", "Validate the pipeline schema")
-	parallelism := flag.Int("P", 1, "The parallelism for the run loop")
+	parallelism := flag.Int("P", runtime.GOMAXPROCS(0), "The parallelism for the run loop")
 	flag.Parse()
 
 	go func() {
@@ -47,8 +49,19 @@ func main() {
 		}
 		defer config.Close()
 
-		err = core.RunPipelineLoop(context.Background(), config, *parallelism, false)
+		go func() {
+			for e := range ui.PollEvents() {
+				if e.Type == ui.KeyboardEvent {
+					break
+				}
+			}
+			ui.Close()
+			os.Exit(0)
+		}()
+
+		err = core.RunPipelineLoop(context.Background(), config, *parallelism, true)
 		if err != nil {
+			ui.Close()
 			fmt.Println("Error running pipeline:", err)
 			os.Exit(1)
 		}

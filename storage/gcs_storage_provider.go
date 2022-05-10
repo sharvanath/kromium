@@ -3,9 +3,9 @@ package storage
 import (
 	"cloud.google.com/go/storage"
 	"context"
+	"fmt"
 	"google.golang.org/api/iterator"
 	"io"
-	"log"
 	"strings"
 )
 
@@ -39,7 +39,7 @@ func (g GcsStorageProvider) ListObjects(ctx context.Context, bucket string) ([]s
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("error listing bucket %s. %v", bucket, err)
 		}
 		names = append(names, attrs.Name)
 	}
