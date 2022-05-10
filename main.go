@@ -13,7 +13,7 @@ import (
 	"runtime"
 )
 
-const version = "0.1.5"
+const version = "0.1.6"
 
 func main() {
 	printVersion := flag.Bool("version", false, "Print version")
