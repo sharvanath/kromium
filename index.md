@@ -1,5 +1,5 @@
 # Kromium
-**Kromium is currently in development and has no release. The licensing is also not final but current version is under [Apache license](https://www.apache.org/licenses/LICENSE-2.0)**
+**Kromium is currently in development and is in pre-release. The licensing is also not final but current version is under [Apache license](https://www.apache.org/licenses/LICENSE-2.0)**
 
 ## What is Kromium?
 
@@ -29,7 +29,7 @@ This configuration will simply read all objects from the `kromium-src` bucket, a
 - Efficient. Kromium uses efficient go concurrency constructs to run fast and in parallel. It can easily process up to 100 Google cloud storage objects/second on a simple macbook pro (8-Core Intel i9). Local files processing can be much faster.
 - Parallelizable without synchronization. Multiple parallel runs of the Kromium pipeline can be executed independantly to achieve large parallelism. It only relies on the checkpoint state to avoid duplicate work. 
 - Transformations. Comes with a few common transformations, and it is very easy to a add new one.
-- High level details on checkpointing/state manegment can be found [here](https://github.com/sharvanath/kromium/blob/main/core/README.md).
+High level details on checkpointing/state manegment can be found [here](https://github.com/sharvanath/kromium/blob/main/core/README.md).
 
 ## Use cases
 - Copying large amounts of data, e.g. copying large amounts data from one bucket/SQL table to another destination.
@@ -56,6 +56,11 @@ More details on how to configure auth for storage provider can be found [here](h
 - Sed: Use sed commands for modifying text.
 ```
 
+## Execute from release binaries
+After downloading the latest release binary for your platform from [here](https://github.com/sharvanath/kromium/releases). Simply run
+
+`./kromium --run pipeline.cue`
+
 ## Execute from source
 ```
 git clone https://github.com/sharvanath/kromium 
@@ -63,8 +68,6 @@ cd kromium
 go run main.go --run examples/identity_local.cue
 ```
 
-## Installation
-### From source
-* go test
-* go install
-* $GO_BIN/kromium --run /tmp/identity_local.cue (e.g. ~/go/bin/kromium --run /tmp/identity_local.cue)
+## Troubleshooting
+* If you see Mac blocking the binary since it's untrusted. Follow [this](https://github.molgen.mpg.de/pages/bs/macOSnotes/mac/mac_procs_unsigned.html)
+* If you see errors of the form "too many open files" or "could not resolve address", check `ulimit -n` and if it is less than 1024 set it to a higher value `ulimit -n 1024`.
