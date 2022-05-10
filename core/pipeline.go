@@ -18,11 +18,20 @@ import (
 )
 
 var processedCount int32
+var lastPct int32
 
 func updateStatus(percent int, message string, renderUI bool) {
 	if !renderUI {
 		return
 	}
+
+	if int32(percent) < atomic.LoadInt32(&lastPct) {
+		// other workers could see smaller values, avoid unnecessary fluctuation in the progress bar.
+		return
+	}
+
+	atomic.StoreInt32(&lastPct, int32(percent))
+
 
 	p := widgets.NewParagraph()
 	p.Text = message
