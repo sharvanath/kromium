@@ -59,16 +59,27 @@ More details on how to configure auth for storage provider https://github.com/sh
 ## Execute from source
 go run main.go --run examples/identity_local.cue 
 
-## Profiling
+## Release binary
+After downloading the latest release binary for your platform from [https://github.com/sharvanath/kromium/releases](https://github.com/sharvanath/kromium/releases).
+Simply run
+
+./kromium --run pipeline.cue
+
+## Troubleshooting
+* If you see Mac blocking the binary since it's untrusted. Follow [this](https://github.molgen.mpg.de/pages/bs/macOSnotes/mac/mac_procs_unsigned.html)
+* If you see errors of the form "too many open files" or "could not resolve address", check `ulimit -n` and if it is less than 1024 set it to a higher value `ulimit -n 1024`.
+
+## Development
+### Testing
+* `go test ./... -test.short` for unit tests
+* `go test ./core -run RunIdentityPipelineLargeSequential` for large sequential copy test.
+* `go test ./core -run RunIdentityPipelineLargeParallel` for large parallel copy test.
+* `go test ./storage  -tags=integration` for storage integration tests. Make sure to update the auth config and to update the test to use the right bucket names.
+
+### Profiling
 * go run main.go --run examples/identity_local.cue 
 * http://localhost:6060/debug/pprof/trace?seconds=120
 * go tool trace <file_name>
-
-## Installation
-### From source
-* go test
-* go install
-* $GO_BIN/kromium --run /tmp/identity_local.cue (e.g. ~/go/bin/kromium --run /tmp/identity_local.cue)
 
 ### Docker
 docker build -t kromium .
