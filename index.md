@@ -74,6 +74,14 @@ cd kromium
 go run main.go --run examples/identity_local.cue
 ```
 
+## Running the first pipeline
+Download the identity local pipeline config: 
+1. `curl -o /tmp/identity_local.cue https://raw.githubusercontent.com/sharvanath/kromium/main/examples/identity_local.cue`
+2. `rm -rf /tmp/kr; mkdir -p /tmp/kr/src; mkdir /tmp/kr/dst; mkdir /tmp/kr/state; for i in {1..16}; do echo "hello" > /tmp/kr/src/hello_$i; done`
+3. `diff /tmp/kr/src /tmp/kr/dst` should show all 16 source files.
+4. `kromium -run /tmp/identity_local.cue`
+5. `diff /tmp/kr/src /tmp/kr/dst` should be empty now.
+
 ## Troubleshooting
 * If you see Mac blocking the binary since it's untrusted. Follow [this](https://github.molgen.mpg.de/pages/bs/macOSnotes/mac/mac_procs_unsigned.html)
 * If you see errors of the form "too many open files" or "could not resolve address", check `ulimit -n` and if it is less than 1024 set it to a higher value `ulimit -n 1024`.
