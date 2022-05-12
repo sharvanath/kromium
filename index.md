@@ -56,10 +56,16 @@ More details on how to configure auth for storage provider can be found [here](h
 - Sed: Use sed commands for modifying text.
 ```
 
-## Execute from release binaries
-After downloading the latest release binary for your platform from [here](https://github.com/sharvanath/kromium/releases). Simply run
+## Installation
+For Mac OS X:
+`brew install sharvanath/core/kromium`
+to confirm the installation
+`brew test kromium`
 
-`./kromium --run pipeline.cue`
+For other environments:
+After downloading the latest release binary for your platform from [here](https://github.com/sharvanath/kromium/releases).
+To confirm the installation
+`kromium -version`
 
 ## Execute from source
 ```
