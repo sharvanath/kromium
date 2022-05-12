@@ -1,7 +1,7 @@
 {
- SourceBucket: "file:///tmp/src"
- DestinationBucket: "file:///tmp/dst"
- StateBucket: "file:///tmp/state"
+ SourceBucket: "file:///tmp/kr/src"
+ DestinationBucket: "file:///tmp/kr/dst"
+ StateBucket: "file:///tmp/kr/state"
  Transforms: [
    {
     Type: "Identity"

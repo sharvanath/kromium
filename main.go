@@ -49,14 +49,17 @@ func main() {
 			os.Exit(1)
 		}
 		defer config.Close()
+		print("%v", *render)
 
 		go func() {
-			for e := range ui.PollEvents() {
-				if e.Type == ui.KeyboardEvent {
-					break
+			if *render {
+				for e := range ui.PollEvents() {
+					if e.Type == ui.KeyboardEvent {
+						break
+					}
 				}
+				ui.Close()
 			}
-			ui.Close()
 			os.Exit(0)
 		}()
 
