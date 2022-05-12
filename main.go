@@ -13,10 +13,11 @@ import (
 	"runtime"
 )
 
-const version = "0.1.6"
+const version = "0.1.7"
 
 func main() {
 	printVersion := flag.Bool("version", false, "Print version")
+	render := flag.Bool("render", true, "Render UI")
 	runConfig := flag.String("run", "", "Run the schema")
 	validate := flag.String("validate", "", "Validate the pipeline schema")
 	parallelism := flag.Int("P", runtime.GOMAXPROCS(0), "The parallelism for the run loop")
@@ -59,7 +60,7 @@ func main() {
 			os.Exit(0)
 		}()
 
-		err = core.RunPipelineLoop(context.Background(), config, *parallelism, true)
+		err = core.RunPipelineLoop(context.Background(), config, *parallelism, *render)
 		if err != nil {
 			ui.Close()
 			fmt.Println("Error running pipeline:", err)
