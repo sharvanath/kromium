@@ -193,6 +193,7 @@ func RunPipeline(ctx context.Context, config *PipelineConfig, threadIdx int, ren
 		log.Infof("[%s] [%d] Done %d/%d", time.Now().Format("2006-01-02 15:04:05.00"), threadIdx, numProcessed, numTotal)
 	}
 	updateStatus((numProcessed*100)/numTotal, fmt.Sprintf("Processed %d/%d", numProcessed, numTotal), renderUi)
+	fmt.Printf("%d", copied)
 	return copied, WriteState(ctx, config.StateBucket, workerState)
 }
 

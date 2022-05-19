@@ -49,8 +49,6 @@ func main() {
 			os.Exit(1)
 		}
 		defer config.Close()
-		print("%v", *render)
-
 		go func() {
 			if *render {
 				for e := range ui.PollEvents() {
@@ -60,7 +58,6 @@ func main() {
 				}
 				ui.Close()
 			}
-			os.Exit(0)
 		}()
 
 		err = core.RunPipelineLoop(context.Background(), config, *parallelism, *render)
