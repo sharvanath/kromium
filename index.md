@@ -57,12 +57,15 @@ More details on how to configure auth for storage provider can be found [here](h
 ```
 
 ## Installation
-For Mac OS X:
+Using go (>=1.16):
+`go get github.com/sharvanath/kromium`
+
+Using homebrew Mac OS X:
 `brew install sharvanath/core/kromium`
 to confirm the installation
 `brew test kromium`
 
-For other environments:
+Downloading Binaries:
 After downloading the latest release binary for your platform from [here](https://github.com/sharvanath/kromium/releases).
 To confirm the installation
 `kromium -version`
