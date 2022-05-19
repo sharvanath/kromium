@@ -60,7 +60,7 @@ More details on how to configure auth for storage provider can be found [here](h
 ### Using go (>=1.16):
 `go get github.com/sharvanath/kromium`
 
-### Using homebrew Mac OS X:
+### Using [Homebrew](https://brew.sh/) (on Mac OS X/Linux):
 `brew install sharvanath/core/kromium`
 to confirm the installation
 `brew test kromium`
