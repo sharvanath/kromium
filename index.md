@@ -70,7 +70,7 @@ After downloading the latest release binary for your platform from [here](https:
 To confirm the installation
 `kromium -version`
 
-## Execute from source
+## Build and run from source
 ```
 git clone https://github.com/sharvanath/kromium 
 cd kromium
