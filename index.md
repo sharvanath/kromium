@@ -25,10 +25,10 @@ Kromium is an efficient no-code bulk file copy/transformation tool. The pipeline
 This configuration will simply read all objects from the `kromium-src` bucket, apply the gzip compression transform and write the output to the `kromium-dst` bucket. The checkpointing state will be written to `kromium-state`. The optional `NameSuffix` argument specifies if a suffix should be applied to the object names when writing to the destination bucket, this can be used for adding filename extensions. The state bucket is used for checkpointing and tracking other types of state information. More examples can be found in [here](https://github.com/sharvanath/kromium/tree/main/examples).
 
 ## Features
-- Resumeable. Kromium checkpoints progress in the state bucket. So in case of any crashes it can be simply restarted.
-- Efficient. Kromium uses efficient go concurrency constructs to run fast and in parallel. It can easily process up to 100 Google cloud storage objects/second on a simple macbook pro (8-Core Intel i9). Local files processing can be much faster.
-- Parallelizable. Multiple parallel runs of the Kromium pipeline can be executed independantly to achieve large parallelism. It only relies on the checkpoint state to avoid duplicate work. 
-- Transformations. Comes with a few common transformations, and it is very easy to a add new one.
+- **Resumeable**: Kromium checkpoints progress in the state bucket. So in case of any crashes it can be simply restarted.
+- **Efficient**: Kromium uses efficient go concurrency constructs to run fast and in parallel. It can easily process up to 100 Google cloud storage objects/second on a simple macbook pro (8-Core Intel i9). Local files processing can be much faster.
+- **Parallelizable**: Multiple parallel runs of the Kromium pipeline can be executed independantly to achieve large parallelism. It only relies on the checkpoint state to avoid duplicate work. 
+- **Transformations**: Comes with a few common transformations, and it is very easy to a add new one.
 High level details on checkpointing/state manegment can be found [here](https://github.com/sharvanath/kromium/blob/main/core/README.md).
 
 ## Use cases
