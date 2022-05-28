@@ -57,11 +57,18 @@ More details on how to configure auth for storage provider can be found [here](h
 ```
 
 ## Installation
-### Option1: Using go (>=1.16):
+### Option1: Using go:
 Make sure `git` is installed, and add $GOBIN to the $PATH.
+If you are using go less >= 1.17 use:
+```
+go install github.com/sharvanath/kromium@latest
+```
+or
+If you are using go < 1.17 use:
 ```
 go get github.com/sharvanath/kromium
 ```
+
 
 ### Option2: Using [Homebrew](https://brew.sh/) (on Mac OS X/Linux):
 ```
