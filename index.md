@@ -57,21 +57,35 @@ More details on how to configure auth for storage provider can be found [here](h
 ```
 
 ## Installation
-### Using go (>=1.16):
-`go get github.com/sharvanath/kromium`
-Make sure to install `git`, and add $GOBIN to the $PATH.
+### Option1: Using go (>=1.16):
+Make sure `git` is installed, and add $GOBIN to the $PATH.
+```
+go get github.com/sharvanath/kromium
+```
 
-### Using [Homebrew](https://brew.sh/) (on Mac OS X/Linux):
-`brew install sharvanath/core/kromium`
-to confirm the installation
-`brew test kromium`
+### Option2: Using [Homebrew](https://brew.sh/) (on Mac OS X/Linux):
+```
+brew install sharvanath/core/kromium
+```
 
-### Downloading Binaries:
-After downloading the latest release binary for your platform from [here](https://github.com/sharvanath/kromium/releases).
+To confirm the installation
+```
+brew test kromium
+```
+
+### Option3: Downloading Binaries:
+Assuming the go(>=1.16) is already installed.
+Download the latest release binary for your platform from [here](https://github.com/sharvanath/kromium/releases).
+For example, for linux amd64:
+```
+curl -L -o kromium.tgz https://github.com/sharvanath/kromium/releases/download/v0.1.7/kromium-v0.1.7-linux-amd64.tar.gz
+tar xvf kromium.tgz
+sudo mv kromium /usr/local/bin/
+```
 To confirm the installation
 `kromium -version`
 
-## Build and run from source
+### Build and run from source
 ```
 git clone https://github.com/sharvanath/kromium 
 cd kromium
@@ -79,12 +93,26 @@ go run main.go --run examples/identity_local.cue
 ```
 
 ## Running the first pipeline
-Download the identity local pipeline config: 
-1. `curl -o /tmp/identity_local.cue https://raw.githubusercontent.com/sharvanath/kromium/main/examples/identity_local.cue`
-2. `rm -rf /tmp/kr; mkdir -p /tmp/kr/src; mkdir /tmp/kr/dst; mkdir /tmp/kr/state; for i in {1..16}; do echo "hello" > /tmp/kr/src/hello_$i; done`
-3. `diff /tmp/kr/src /tmp/kr/dst` should show all 16 source files.
-4. `kromium -run /tmp/identity_local.cue`
-5. `diff /tmp/kr/src /tmp/kr/dst` should be empty now.
+1. Download the identity local pipeline config: 
+```
+curl -o /tmp/identity_local.cue https://raw.githubusercontent.com/sharvanath/kromium/main/examples/identity_local.cue
+```
+2. Create test src, dst and state directories:
+```
+rm -rf /tmp/kr; mkdir -p /tmp/kr/src; mkdir /tmp/kr/dst; mkdir /tmp/kr/state; for i in {1..16}; do echo "hello" > /tmp/kr/src/hello_$i; done
+```
+3. Confirm the difference between src and dst before the run (should show all 16 source files).
+```
+diff /tmp/kr/src /tmp/kr/dst
+```
+5. Run the pipeline
+```
+kromium -run /tmp/identity_local.cue
+```
+7. Confirm there is no difference between src and dst after the run
+```
+diff /tmp/kr/src /tmp/kr/dst` # should be empty now.
+```
 
 ## Troubleshooting
 * If you see Mac blocking the binary since it's untrusted. Follow [this](https://github.molgen.mpg.de/pages/bs/macOSnotes/mac/mac_procs_unsigned.html)
