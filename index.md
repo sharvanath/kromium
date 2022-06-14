@@ -123,7 +123,7 @@ kromium -run /tmp/identity_local.cue
 ```
 7. Confirm there is no difference between src and dst after the run
 ```
-diff /tmp/kr/src /tmp/kr/dst` # should be empty now.
+diff /tmp/kr/src /tmp/kr/dst # should be empty now.
 ```
 
 ## Troubleshooting
