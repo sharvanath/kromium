@@ -115,7 +115,7 @@ rm -rf /tmp/kr; mkdir -p /tmp/kr/src; mkdir /tmp/kr/dst; mkdir /tmp/kr/state; fo
 ```
 3. Confirm the difference between src and dst before the run (should show all 16 source files).
 ```
-diff /tmp/kr/src /tmp/kr/dst
+diff /tmp/kr/src /tmp/kr/dst # should show all 16 source files.
 ```
 5. Run the pipeline
 ```
