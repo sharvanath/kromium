@@ -1,5 +1,5 @@
 # Kromium
-**Kromium([https://kromium.io](https://kromium.io)) is currently in development and has no release. The licensing is also not final but current version is under https://www.apache.org/licenses/LICENSE-2.0**
+**Kromium([https://kromium.io](https://kromium.io)) is under https://www.apache.org/licenses/LICENSE-2.0**
 
 ## What is Kromium?
 
